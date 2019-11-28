@@ -3,10 +3,10 @@
 
 namespace Palasthotel\WordPress\UseMemcached;
 
-use Memcache;
+use Memcached;
 
 /**
- * @property \Memcache cache
+ * @property \Memcached cache
  */
 class Store {
 
@@ -23,46 +23,26 @@ class Store {
 		if(!class_exists("Memcached")) return;
 
 		// get all bucket definitions
-		$servers = apply_filters(Plugin::FILTER_SERVERS, array('127.0.0.1:11211'));
+		$servers = apply_filters(Plugin::FILTER_SERVERS,
+			array(
+				array('127.0.0.1', 1121)
+			)
+		);
 
 		// init Memcache buckets
-		$this->cache = new Memcache();
+		$this->cache = new Memcached();
 		foreach ( $servers as $server  ) {
-			if ( 'unix://' == substr( $server, 0, 7 ) ) {
-				$node = $server;
-				$port = 0;
-			} else {
-				list ( $node, $port ) = explode(':', $server);
-				if ( !$port )
-					$port = ini_get('memcache.default_port');
-				$port = intval($port);
-				if ( !$port )
-					$port = 11211;
-			}
-			$this->cache->addServer($node, $port, true, 1, 1, 15, true, array($this, 'failure_callback'));
-			$this->cache->setCompressThreshold(20000, 0.2);
+			$this->cache->addServer($server[0], $server[1]);
 		}
 
 	}
 
-	function set($id, $data, $group = 'default', $expire = 0) {
-		$key = $this->key($id, $group);
-		if ( isset($this->cache[$key]) && ('checkthedatabaseplease' === $this->cache[$key]) )
-			return false;
+	function set($id, $data, $expire = 0) {
+		return $this->cache->set($id, $data, $expire);
+	}
 
-		if ( is_object($data) )
-			$data = clone $data;
-
-		$this->cache[$key] = $data;
-
-		if ( in_array($group, $this->no_mc_groups) )
-			return true;
-
-		$expire = ($expire == 0) ? $this->default_expiration : $expire;
-		$mc =& $this->get_mc($group);
-		$result = $mc->set($key, $data, false, $expire);
-
-		return $result;
+	function get($id){
+		return $this->cache->get($id);
 	}
 
 
