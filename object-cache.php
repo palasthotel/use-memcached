@@ -26,6 +26,9 @@ if ( class_exists( 'Memcached' ) ) {
 
 
 	function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
+
+		if(function_exists( "\Palasthotel\WordPress\UseMemcached\increment_added_to_cache_count" )) \Palasthotel\WordPress\UseMemcached\increment_added_to_cache_count();
+
 		return wp_get_memcached()->add( $key, $data, $group, $expire );
 	}
 

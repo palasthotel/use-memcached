@@ -84,7 +84,7 @@ function admin_bar(){
 	global $wp_admin_bar;
 
 	$isWorking = true;
-	$message = "✅ Working fine";
+	$message = "✅ Working fine. Add to cache actions: " . get_added_to_cache_count();
 	if(!objectCacheFileExists()) {
 		$isWorking = false;
 		$message = "🚨 Missing object-cache.php";
@@ -99,6 +99,7 @@ function admin_bar(){
 		$message = "🚨 could not find wp_get_memcached function. Perhaps Memcached class not exists.";
 		$message.= ((!class_exists("Memcached"))? "Memcached class not exists.": "");
 	}
+
 
 	$style = "";
 	if(!$isWorking){
@@ -117,10 +118,33 @@ function admin_bar(){
 	));
 
 	// TODO: flush cache route
+	wp_enqueue_script(
+		"use-memcached-admin",
+		plugin_dir_url(__FILE__)."/admin.js",
+		array("jquery"),
+		filemtime(plugin_dir_path(__FILE__)."/admin.js"),
+		true
+	);
 	$wp_admin_bar->add_node(array(
 		'id' => 'use-memcached-flush',
-		'title' => '<div style="cursor: pointer;">🗑 Flush cache</div>',
+		'title' => '<div style="cursor: pointer;">🗑 Flush cache JS</div>',
 		'parent' => "use-memcached-info",
 	));
 }
 add_action( 'admin_bar_menu', __NAMESPACE__.'\admin_bar', 40 );
+
+function flush(){
+	$response = wp_cache_flush();
+	wp_send_json_success(array(
+		"response" => $response
+	));
+}
+add_action('wp_ajax_use_memcached_flush', __NAMESPACE__.'\flush');
+
+function get_added_to_cache_count(){
+	return intval(wp_cache_get("use_memcached_added_to_cache_count"));
+}
+
+function increment_added_to_cache_count(){
+	wp_cache_incr("use_memcached_added_to_cache_count");
+}
