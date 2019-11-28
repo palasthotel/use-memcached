@@ -2,11 +2,16 @@
 
 // this file was copied here by use-memcached plugin
 
-define('USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 2);
+define('USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 3);
 
 if(!defined('WP_CACHE_KEY_SALT')){
 	// you can define that in wp-config.php
 	define('WP_CACHE_KEY_SALT', 'salt-and-pepper');
+}
+
+if(!class_exists("Memcached")){
+	error_log("Could not find class Memcached.\n");
+	if(class_exists("Memcache")) error_log("But class Memcache seems to be available.\n");
 }
 
 if ( class_exists( 'Memcached' ) ) {

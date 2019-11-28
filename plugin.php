@@ -18,7 +18,7 @@
 namespace Palasthotel\WordPress\UseMemcached;
 
 // remember to always update version in object-cache.php too
-const OBJECT_CACHE_SCRIPT_VERSION = 2;
+const OBJECT_CACHE_SCRIPT_VERSION = 3;
 const DESTINATION_FILE = WP_CONTENT_DIR."/object-cache.php";
 
 /**
@@ -83,36 +83,43 @@ function admin_bar(){
 	 */
 	global $wp_admin_bar;
 
-	$color = "";
-	$bgColor = "";
+	$isWorking = true;
+	$message = "✅ Working fine";
 	if(!objectCacheFileExists()) {
-		$bgColor = "background-color: red;";
-		error_log( "Could not find object-cache.php in wp-contents" );
+		$isWorking = false;
+		$message = "🚨 Missing object-cache.php";
 	} else if(!isOurObjectCacheFile()){
-		$color="color:black";
-		$bgColor = "background-color: yellow;";
-		error_log("object-cache.php is not the one from this plugin.");
+		$isWorking = false;
+		$message = "🚨 object-cache.php is not from use memcached plugin.";
 	} else if(!objectCacheVersionMatches()){
-		$color="color:black";
-		$bgColor = "background-color: yellow;";
-		error_log("object Cache versions not matching:  Need ".OBJECT_CACHE_SCRIPT_VERSION." but is ".getActiveObjectCacheFileVersion());
+		$isWorking = false;
+		$message = "🚨 object-cache.php version is ".getActiveObjectCacheFileVersion()." but need ".OBJECT_CACHE_SCRIPT_VERSION;
 	} else if( !function_exists('wp_get_memcached')){
-		$color="color:black";
-		$bgColor = "background-color: yellow;";
-		error_log("Could not find wp_get_memcached function which is weired because all other tests succeed...");
+		$isWorking = false;
+		$message = "🚨 could not find wp_get_memcached function. Perhaps Memcached class not exists.";
+		$message.= ((!class_exists("Memcached"))? "Memcached class not exists.": "");
 	}
 
-	//TODO: more health checks
+	$style = "";
+	if(!$isWorking){
+		$style = "background-color: #F44336;";
+	}
 
 	$wp_admin_bar->add_node( array(
 		'id'    => "use-memcached-info",
-		'title' => "<div style='$bgColor$color;margin-left:-10px;padding:0 10px;' title='Use Memcached'>💾 Cache</div>",
+		'title' => "<div style='$style;margin-left: -10px;padding: 0 10px;' title='Use Memcached'>💾 Cache</div>",
 	) );
+
+	$wp_admin_bar->add_node(array(
+		'id' => 'use-memcached-status',
+		'title' => "<div >$message</div>",
+		'parent' => "use-memcached-info"
+	));
 
 	// TODO: flush cache route
 	$wp_admin_bar->add_node(array(
 		'id' => 'use-memcached-flush',
-		'title' => 'Flush',
+		'title' => '<div style="cursor: pointer;">🗑 Flush cache</div>',
 		'parent' => "use-memcached-info",
 	));
 }
