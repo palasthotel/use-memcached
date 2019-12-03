@@ -148,3 +148,5 @@ function get_added_to_cache_count(){
 function increment_added_to_cache_count(){
 	wp_cache_incr("use_memcached_added_to_cache_count");
 }
+
+require_once dirname(__FILE__)."/inc/wp-cli.php";
