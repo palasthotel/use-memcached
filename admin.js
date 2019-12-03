@@ -30,6 +30,7 @@
 	 */
 	let isRequestingStats = false;
 	function ajax_stats_request(){
+		console.log("Request stats");
 		if(isRequestingStats) return;
 		isRequestingStats =  true;
 		$.post(Settings.ajaxUrl, {action: Settings.actions.stats}, ajax_stats_response);
@@ -43,8 +44,12 @@
 	// expose api to public
 	// ------------------------------
 	Settings.api = {
-		flush: ajax_flush_request,
-		stats: ajax_stats_request,
+		flush: function(){
+			console.log("flush it");
+		},
+		stats: function(){
+			console.log("stats please");
+		},
 	};
 
 })(jQuery, UseMemcached);

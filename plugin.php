@@ -87,13 +87,15 @@ function admin_bar(){
 	$message = "✅ Working fine. Add to cache actions: " . get_added_to_cache_count();
 	if(!objectCacheFileExists()) {
 		$isWorking = false;
-		$message = "🚨 Missing object-cache.php";
+		$message = "<a href='".admin_url("/")."'>🚨 Missing object-cache.php</a>";
 	} else if(!isOurObjectCacheFile()){
 		$isWorking = false;
 		$message = "🚨 object-cache.php is not from use memcached plugin.";
 	} else if(!objectCacheVersionMatches()){
 		$isWorking = false;
-		$message = "🚨 object-cache.php version is ".getActiveObjectCacheFileVersion()." but need ".OBJECT_CACHE_SCRIPT_VERSION;
+		$message = "<a href='".admin_url("/")."'>🚨 object-cache.php version is ".
+		           getActiveObjectCacheFileVersion()." but need ".
+		           OBJECT_CACHE_SCRIPT_VERSION."</a>";
 	} else if( !function_exists( 'use_memcached' )){
 		$isWorking = false;
 		$message = "🚨 could not find wp_get_memcached function. Perhaps Memcached class not exists.";
@@ -188,11 +190,18 @@ add_action('wp_ajax_use_memcached_stats', __NAMESPACE__.'\ajax_stats');
 
 
 function get_added_to_cache_count(){
-	return intval(wp_cache_get("use_memcached_added_to_cache_count"));
+	$count = intval(wp_cache_get("use_memcached_added_to_cache_count"));
+	if($count > 1000) return round($count/1000, 1)."k";
+	if($count > 10000) return round($count/1000)."k";
 }
 
 function increment_added_to_cache_count(){
-	wp_cache_incr("use_memcached_added_to_cache_count");
+	$increment = wp_cache_incr("use_memcached_added_to_cache_count");
+	if($increment === false){
+		$increment = 1;
+		wp_cache_set("use_memcached_added_to_cache_count",0);
+	}
+	return $increment;
 }
 
 require_once dirname(__FILE__)."/inc/wp-cli.php";
