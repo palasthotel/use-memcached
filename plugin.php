@@ -148,6 +148,13 @@ function ajax_flush(){
 }
 add_action('wp_ajax_use_memcached_flush', __NAMESPACE__.'\ajax_flush');
 
+function stats(){
+	if(function_exists("wordpress_memcached_get_stats")){
+		return \wordpress_memcached_get_stats();
+	}
+	return "";
+}
+
 function get_added_to_cache_count(){
 	return intval(wp_cache_get("use_memcached_added_to_cache_count"));
 }

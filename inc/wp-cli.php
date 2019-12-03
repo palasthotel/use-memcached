@@ -38,7 +38,7 @@ class CLI{
 	 * @when after_wp_load
 	 */
 	public function stats(){
-		\WP_CLI::log(wordpress_memcached_get_stats());
+		\WP_CLI::log(stats());
 	}
 
 }
