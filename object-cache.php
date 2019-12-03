@@ -2,7 +2,7 @@
 
 // this file was copied here by use-memcached plugin
 
-define('USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 3);
+define('USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 4);
 
 if(!defined('WP_CACHE_KEY_SALT')){
 	// you can define that in wp-config.php
@@ -19,7 +19,7 @@ if ( class_exists( 'Memcached' ) ) {
 	/**
 	 * @return WP_Object_Cache
 	 */
-	function wp_get_memcached(){
+	function use_memcached(){
 		global $wp_object_cache;
 		return $wp_object_cache;
 	}
@@ -29,31 +29,31 @@ if ( class_exists( 'Memcached' ) ) {
 
 		if(function_exists( "\Palasthotel\WordPress\UseMemcached\increment_added_to_cache_count" )) \Palasthotel\WordPress\UseMemcached\increment_added_to_cache_count();
 
-		return wp_get_memcached()->add( $key, $data, $group, $expire );
+		return use_memcached()->add( $key, $data, $group, $expire );
 	}
 
 	function wp_cache_incr( $key, $n = 1, $group = '' ) {
-		return wp_get_memcached()->incr( $key, $n, $group );
+		return use_memcached()->incr( $key, $n, $group );
 	}
 
 	function wp_cache_decr( $key, $n = 1, $group = '' ) {
-		return wp_get_memcached()->decr( $key, $n, $group );
+		return use_memcached()->decr( $key, $n, $group );
 	}
 
 	function wp_cache_close() {
-		wp_get_memcached()->close();
+		use_memcached()->close();
 	}
 
 	function wp_cache_delete( $key, $group = '' ) {
-		return wp_get_memcached()->delete( $key, $group );
+		return use_memcached()->delete( $key, $group );
 	}
 
 	function wp_cache_flush() {
-		return wp_get_memcached()->flush();
+		return use_memcached()->flush();
 	}
 
 	function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
-		$value = wp_get_memcached()->get( $key, $group, $force, $found );
+		$value = use_memcached()->get( $key, $group, $force, $found );
 		return $value;
 	}
 
@@ -67,18 +67,20 @@ if ( class_exists( 'Memcached' ) ) {
 	 *
 	 */
 	function wp_cache_get_multi( $key_and_groups, $bucket = 'default' ) {
-		return wp_get_memcached()->get_multi( $key_and_groups, $bucket );
+		return use_memcached()->get_multi( $key_and_groups, $bucket );
 	}
 
 	/**
-	 * $items = array(
+	 *
+	 * @param array $items  array(
 	 *      array( 'key', 'data', 'group' ),
 	 *      array( 'key', 'data' )
 	 * );
-	 *
+	 * @param int $expire
+	 * @param string $group
 	 */
 	function wp_cache_set_multi( $items, $expire = 0, $group = 'default' ) {
-		wp_get_memcached()->set_multi( $items, $expire = 0, $group = 'default' );
+		use_memcached()->set_multi( $items, $expire, $group );
 	}
 
 	function wp_cache_init() {
@@ -87,27 +89,23 @@ if ( class_exists( 'Memcached' ) ) {
 	}
 
 	function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
-		return wp_get_memcached()->replace( $key, $data, $group, $expire );
+		return use_memcached()->replace( $key, $data, $group, $expire );
 	}
 
 	function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
 		if ( defined( 'WP_INSTALLING' ) == false ) {
-			return wp_get_memcached()->set( $key, $data, $group, $expire );
+			return use_memcached()->set( $key, $data, $group, $expire );
 		} else {
-			return wp_get_memcached()->delete( $key, $group );
+			return use_memcached()->delete( $key, $group );
 		}
 	}
 
 	function wp_cache_add_global_groups( $groups ) {
-		wp_get_memcached()->add_global_groups( $groups );
+		use_memcached()->add_global_groups( $groups );
 	}
 
 	function wp_cache_add_non_persistent_groups( $groups ) {
-		wp_get_memcached()->add_non_persistent_groups( $groups );
-	}
-
-	function wordpress_memcached_get_stats() {
-		return wp_get_memcached()->stats();
+		use_memcached()->add_non_persistent_groups( $groups );
 	}
 
 	class WP_Object_Cache {
@@ -424,20 +422,31 @@ if ( class_exists( 'Memcached' ) ) {
 			return $cmd2 . substr( $line, strlen( $cmd ) ) . "\n";
 		}
 
-		function stats() {
+		/**
+		 * @param bool $asArray
+		 *
+		 * @return string|array
+		 */
+		function stats($asArray = false) {
 			$stats_text = '';
+			$stats_arr = array();
 			foreach ( $this->mc as $bucket => $mc ) {
 				$stats = $mc->getStats();
-				foreach ( $stats as $key => $details ) {
-					$stats_text .= 'memcached: ' . $key . "\n\r";
-					foreach ( $details as $name => $value ) {
-						$stats_text .= $name . ': ' . $value . "\n\r";
+				if($asArray){
+					$stats_arr[] = $stats;
+				} else {
+					foreach ( $stats as $key => $details ) {
+						$stats_text .= 'memcached: ' . $key . "\n\r";
+						foreach ( $details as $name => $value ) {
+							$stats_text .= $name . ': ' . $value . "\n\r";
+						}
+						$stats_text .= "\n\r";
 					}
-					$stats_text .= "\n\r";
 				}
+
 			}
 
-			return $stats_text;
+			return ($asArray)? $stats_arr: $stats_text;
 		}
 
 		function &get_mc( $group ) {

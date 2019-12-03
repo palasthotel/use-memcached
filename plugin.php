@@ -18,7 +18,7 @@
 namespace Palasthotel\WordPress\UseMemcached;
 
 // remember to always update version in object-cache.php too
-const OBJECT_CACHE_SCRIPT_VERSION = 3;
+const OBJECT_CACHE_SCRIPT_VERSION = 4;
 const DESTINATION_FILE = WP_CONTENT_DIR."/object-cache.php";
 
 /**
@@ -94,7 +94,7 @@ function admin_bar(){
 	} else if(!objectCacheVersionMatches()){
 		$isWorking = false;
 		$message = "🚨 object-cache.php version is ".getActiveObjectCacheFileVersion()." but need ".OBJECT_CACHE_SCRIPT_VERSION;
-	} else if( !function_exists('wp_get_memcached')){
+	} else if( !function_exists( 'use_memcached' )){
 		$isWorking = false;
 		$message = "🚨 could not find wp_get_memcached function. Perhaps Memcached class not exists.";
 		$message.= ((!class_exists("Memcached"))? "Memcached class not exists.": "");
@@ -148,11 +148,11 @@ function ajax_flush(){
 }
 add_action('wp_ajax_use_memcached_flush', __NAMESPACE__.'\ajax_flush');
 
-function stats(){
-	if(function_exists("wordpress_memcached_get_stats")){
-		return \wordpress_memcached_get_stats();
+function stats($asArray = false){
+	if(function_exists("use_memcached")){
+		return \use_memcached()->stats($asArray);
 	}
-	return "";
+	return ($asArray)? array(): "";
 }
 
 function get_added_to_cache_count(){

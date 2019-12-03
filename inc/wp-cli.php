@@ -8,10 +8,6 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 
 class CLI{
 
-
-	public function __construct() {
-	}
-
 	/**
 	 * Flush memcache
 	 *
