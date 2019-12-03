@@ -133,6 +133,9 @@ function admin_bar(){
 }
 add_action( 'admin_bar_menu', __NAMESPACE__.'\admin_bar', 40 );
 
+/**
+ * @return bool
+ */
 function flush(){
 	return wp_cache_flush();
 }

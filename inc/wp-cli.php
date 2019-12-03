@@ -22,7 +22,23 @@ class CLI{
 	 * @when after_wp_load
 	 */
 	public function flush(){
-		var_dump(flush());
+		if(!flush()){
+			\WP_CLI::error( "Could not flush Memcached!\n\r" );
+		}
+		\WP_CLI::success( "Flush Memcached succeeded!\n\r" );
+	}
+
+	/**
+	 * Memcache stats
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp memcache stats
+	 *
+	 * @when after_wp_load
+	 */
+	public function stats(){
+		\WP_CLI::log(wordpress_memcached_get_stats());
 	}
 
 }

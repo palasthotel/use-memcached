@@ -115,6 +115,9 @@ if ( class_exists( 'Memcached' ) ) {
 		public $global_groups = array(); // (was private)
 		public $no_mc_groups = array(); // (was private)
 		public $cache = array(); // (was private)
+		/**
+		 * @var \Memcached[]
+		 */
 		public $mc = array(); // (was private)
 		public $stats = array( 'add' => 0, 'delete' => 0, 'get' => 0, 'get_multi' => 0, ); // (was private)
 		public $group_ops = array(); // (was private)
