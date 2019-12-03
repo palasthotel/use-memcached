@@ -22,7 +22,7 @@ class CLI{
 	 * @when after_wp_load
 	 */
 	public function flush(){
-
+		var_dump(flush());
 	}
 
 }

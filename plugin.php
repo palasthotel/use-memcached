@@ -134,12 +134,16 @@ function admin_bar(){
 add_action( 'admin_bar_menu', __NAMESPACE__.'\admin_bar', 40 );
 
 function flush(){
-	$response = wp_cache_flush();
+	return wp_cache_flush();
+}
+
+function ajax_flush(){
+	$response = flush();
 	wp_send_json_success(array(
 		"response" => $response
 	));
 }
-add_action('wp_ajax_use_memcached_flush', __NAMESPACE__.'\flush');
+add_action('wp_ajax_use_memcached_flush', __NAMESPACE__.'\ajax_flush');
 
 function get_added_to_cache_count(){
 	return intval(wp_cache_get("use_memcached_added_to_cache_count"));
