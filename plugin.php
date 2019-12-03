@@ -125,6 +125,18 @@ function admin_bar(){
 		filemtime(plugin_dir_path(__FILE__)."/admin.js"),
 		true
 	);
+	wp_localize_script(
+		"use-memcached-admin",
+		"UseMemcached",
+		array(
+			"ajaxUrl" => admin_url("admin-ajax.php"),
+			"actions" => array(
+				"flush" => admin_url("admin-ajax.php"),
+				"stats" => admin_url("admin-ajax.php"),
+			)
+		)
+	);
+
 	$wp_admin_bar->add_node(array(
 		'id' => 'use-memcached-flush',
 		'title' => '<div style="cursor: pointer;">🗑 Flush cache JS</div>',
@@ -140,6 +152,21 @@ function flush(){
 	return wp_cache_flush();
 }
 
+/**
+ * @param bool $asArray
+ *
+ * @return array|string
+ */
+function stats($asArray = false){
+	if(function_exists("use_memcached")){
+		return \use_memcached()->stats($asArray);
+	}
+	return ($asArray)? array(): "";
+}
+
+/**
+ * flush memcached ajax response
+ */
 function ajax_flush(){
 	$response = flush();
 	wp_send_json_success(array(
@@ -148,12 +175,17 @@ function ajax_flush(){
 }
 add_action('wp_ajax_use_memcached_flush', __NAMESPACE__.'\ajax_flush');
 
-function stats($asArray = false){
-	if(function_exists("use_memcached")){
-		return \use_memcached()->stats($asArray);
-	}
-	return ($asArray)? array(): "";
+/**
+ * get memcached stats ajax response
+ */
+function ajax_stats(){
+	wp_send_json_success(array(
+		"response" => stats(true)
+	));
 }
+add_action('wp_ajax_use_memcached_stats', __NAMESPACE__.'\ajax_stats');
+
+
 
 function get_added_to_cache_count(){
 	return intval(wp_cache_get("use_memcached_added_to_cache_count"));
