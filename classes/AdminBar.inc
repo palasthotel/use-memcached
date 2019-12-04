@@ -36,7 +36,7 @@ class AdminBar {
 
 		$wp_admin_bar->add_node( array(
 			'id'    => "use-memcached-info",
-			'title' => "<div style='$style;margin-left: -10px;padding: 0 10px;' title='Use Memcached'>💾 Cache</div>",
+			'title' => "<div style='$style;margin-left: -10px;margin-right: -10px;padding: 0 10px;' title='Use Memcached'>💾 Cache</div>",
 		) );
 
 		if($allServersConnected){
