@@ -18,10 +18,10 @@ class CLI{
 	 * @when after_wp_load
 	 */
 	public function flush(){
-		if(!flush()){
-			\WP_CLI::error( "Could not flush Memcached!\n\r" );
+		if(!Plugin::instance()->memcache->flush()){
+			\WP_CLI::error( "Could not flush memcache!\n\r" );
 		}
-		\WP_CLI::success( "Flush Memcached succeeded!\n\r" );
+		\WP_CLI::success( "Flush memcache succeeded!\n\r" );
 	}
 
 	/**
@@ -34,7 +34,7 @@ class CLI{
 	 * @when after_wp_load
 	 */
 	public function stats(){
-		\WP_CLI::log(stats());
+		\WP_CLI::log(Plugin::instance()->memcache->stats());
 	}
 
 }
@@ -43,6 +43,6 @@ class CLI{
 	"memcache",
 	__NAMESPACE__."\CLI",
 	array(
-		'shortdesc' => 'Memcache cli commands.',
+		'shortdesc' => 'Use memcached cli commands.',
 	)
 );

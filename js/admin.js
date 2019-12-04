@@ -3,6 +3,7 @@
 
 	const $counter = $("#use-memcached-add-count");
 	const $flushLoading = $("#use-memcached-loading");
+	const $flushResponse = $("#use-memcached-response");
 
 	$(function(){
 		addEventHandlers();
@@ -23,11 +24,19 @@
 		isFlushing = true;
 		$.post(Settings.ajaxUrl,{action: Settings.actions.flush}, ajax_flush_response);
 	}
+	let _flushResponseTimeout = null;
 	function ajax_flush_response(response){
 		isFlushing = false;
 		if(response.success && response.data.response){
 			$counter.text(0);
+			$flushResponse.text("👍");
+		} else {
+			$flushResponse.text("🚨");
 		}
+		clearTimeout(_flushResponseTimeout);
+		_flushResponseTimeout = setTimeout(function(){
+			$flushResponse.text("");
+		}, 1500);
 		setLoading(false);
 	}
 
