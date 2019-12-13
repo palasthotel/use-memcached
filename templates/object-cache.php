@@ -2,33 +2,43 @@
 
 // this file was copied here by use-memcached plugin
 
-define('USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 4);
+// always count up if file changed
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 10 );
 
-if(!defined('WP_CACHE_KEY_SALT')){
-	// you can define that in wp-config.php
-	define('WP_CACHE_KEY_SALT', 'salt-and-pepper');
-}
+if (
+	is_file( WP_CONTENT_DIR . "/uploads/use-memcached.disabled" )
+	||
+	! class_exists( 'Memcached' )
+) {
 
-if(!class_exists("Memcached")){
-	error_log("Could not find class Memcached.\n");
-	if(class_exists("Memcache")) error_log("But class Memcache seems to be available.\n");
-}
+	if ( function_exists( 'wp_using_ext_object_cache' ) ) {
+		wp_using_ext_object_cache( false );
+	} else {
+		wp_die( 'Memcached class not available.' );
+	}
 
-if ( class_exists( 'Memcached' ) ) {
+
+} else {
+
+	// if we are here we will load our object cache logic
+	define( 'USE_MEMCACHED_OBJECT_CACHE_WAS_LOADED', true );
+
+	if ( ! defined( 'WP_CACHE_KEY_SALT' ) ) {
+		// you can define that in wp-config.php
+		define( 'WP_CACHE_KEY_SALT', 'salt-and-pepper' );
+	}
 
 	/**
 	 * @return WP_Object_Cache
 	 */
-	function use_memcached(){
+	function use_memcached() {
 		global $wp_object_cache;
+
 		return $wp_object_cache;
 	}
 
 
 	function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
-
-		if(function_exists( "\Palasthotel\WordPress\UseMemcached\increment_added_to_cache_count" )) \Palasthotel\WordPress\UseMemcached\increment_added_to_cache_count();
-
 		return use_memcached()->add( $key, $data, $group, $expire );
 	}
 
@@ -52,8 +62,9 @@ if ( class_exists( 'Memcached' ) ) {
 		return use_memcached()->flush();
 	}
 
-	function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
+	function wp_cache_get( $key, $group = '', $force = false, &$found = NULL ) {
 		$value = use_memcached()->get( $key, $group, $force, $found );
+
 		return $value;
 	}
 
@@ -72,7 +83,7 @@ if ( class_exists( 'Memcached' ) ) {
 
 	/**
 	 *
-	 * @param array $items  array(
+	 * @param array $items array(
 	 *      array( 'key', 'data', 'group' ),
 	 *      array( 'key', 'data' )
 	 * );
@@ -117,7 +128,11 @@ if ( class_exists( 'Memcached' ) ) {
 		 * @var \Memcached[]
 		 */
 		public $mc = array(); // (was private)
-		public $stats = array( 'add' => 0, 'delete' => 0, 'get' => 0, 'get_multi' => 0, ); // (was private)
+		public $stats = array( 'add'       => 0,
+		                       'delete'    => 0,
+		                       'get'       => 0,
+		                       'get_multi' => 0,
+		); // (was private)
 		public $group_ops = array(); // (was private)
 		public $memcache_debug = array(); // added for ElasticPress compatibility
 		public $cache_enabled = true; // modified to allow wordpress to properly disable object cache in wp-activate.php +22 (was private)
@@ -233,11 +248,11 @@ if ( class_exists( 'Memcached' ) ) {
 			return $ret;
 		}
 
-		function get( $id, $group = 'default', $force = false, &$found = null ) {
+		function get( $id, $group = 'default', $force = false, &$found = NULL ) {
 			$key = $this->key( $id, $group );
 			$mc  =& $this->get_mc( $group );
 
-			if ( null !== $found ) {
+			if ( NULL !== $found ) {
 				$found = true;
 			}
 
@@ -251,9 +266,9 @@ if ( class_exists( 'Memcached' ) ) {
 				$this->cache[ $key ] = $value = false;
 			} else {
 				$value = $mc->get( $key );
-				if ($mc->getResultCode() == Memcached::RES_NOTFOUND) {
+				if ( $mc->getResultCode() == Memcached::RES_NOTFOUND ) {
 					$value = false;
-					if ( null !== $found ) {
+					if ( NULL !== $found ) {
 						$found = false;
 					}
 				}
@@ -305,7 +320,7 @@ if ( class_exists( 'Memcached' ) ) {
 			}
 
 			if ( ! empty( $gets ) ) {
-				$null    = null;
+				$null    = NULL;
 				$results = $mc->getMulti( $gets, $null, Memcached::GET_PRESERVE_ORDER );
 				$joined  = array_combine( array_keys( $gets ), array_values( $results ) );
 				$return  = array_merge( $return, $joined );
@@ -412,7 +427,7 @@ if ( class_exists( 'Memcached' ) ) {
 				'get'    => 'green',
 				'set'    => 'purple',
 				'add'    => 'blue',
-				'delete' => 'red'
+				'delete' => 'red',
 			);
 
 			$cmd = substr( $line, 0, strpos( $line, ' ' ) );
@@ -427,12 +442,12 @@ if ( class_exists( 'Memcached' ) ) {
 		 *
 		 * @return string|array
 		 */
-		function stats($asArray = false) {
+		function stats( $asArray = false ) {
 			$stats_text = '';
-			$stats_arr = array();
+			$stats_arr  = array();
 			foreach ( $this->mc as $bucket => $mc ) {
 				$stats = $mc->getStats();
-				if($asArray){
+				if ( $asArray ) {
 					$stats_arr[] = $stats;
 				} else {
 					foreach ( $stats as $key => $details ) {
@@ -446,7 +461,7 @@ if ( class_exists( 'Memcached' ) ) {
 
 			}
 
-			return ($asArray)? $stats_arr: $stats_text;
+			return ( $asArray ) ? $stats_arr : $stats_text;
 		}
 
 		function &get_mc( $group ) {
@@ -459,7 +474,7 @@ if ( class_exists( 'Memcached' ) ) {
 
 		function __construct() {
 			global $memcached_servers;
-			$key_prefix = "";
+			$this->freistil_prefix = "";
 
 
 			if ( isset( $memcached_servers ) ) {
@@ -467,29 +482,33 @@ if ( class_exists( 'Memcached' ) ) {
 			} else {
 				// check if we are on freistil instructure
 
-				$freistilMemcachedSettings = ABSPATH."/../config/drupal/settings-d8-memcache.php";
-				if(file_exists($freistilMemcachedSettings)){
+				$freistilMemcachedSettings = ABSPATH . "/../config/drupal/settings-d8-memcache.php";
+				if ( file_exists( $freistilMemcachedSettings ) ) {
 					require_once $freistilMemcachedSettings;
 
 					/**
 					 * @var array $settings
 					 */
 
-					if(is_array($settings)){
+					if ( is_array( $settings ) ) {
 
-						if(
-							isset($settings["memcache_servers"])
+						if (
+							isset( $settings["memcache_servers"] )
 							&&
-							is_array($settings["memcache_servers"])
-						)	$buckets = array_keys($settings["memcache_servers"]);
+							is_array( $settings["memcache_servers"] )
+						) {
+							$buckets = array_keys( $settings["memcache_servers"] );
+						}
 
-						if(
-							isset($settings["memcache"])
+						if (
+							isset( $settings["memcache"] )
 							&&
-							is_array($settings["memcache"])
+							is_array( $settings["memcache"] )
 							&&
-							isset($settings["memcache"]["key_prefix"])
-						) $key_prefix = $settings["memcache"]["key_prefix"];
+							isset( $settings["memcache"]["key_prefix"] )
+						) {
+							$this->freistil_prefix = $settings["memcache"]["key_prefix"];
+						}
 
 					}
 
@@ -524,12 +543,16 @@ if ( class_exists( 'Memcached' ) ) {
 			}
 
 			global $blog_id, $table_prefix;
-			$this->global_prefix = $key_prefix.'';
-			$this->blog_prefix   = $key_prefix.'';
+			$this->global_prefix = '';
+			$this->blog_prefix   = '';
 			if ( function_exists( 'is_multisite' ) ) {
 				$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;
 				$this->blog_prefix   = ( is_multisite() ? $blog_id : $table_prefix ) . ':';
 			}
+
+			$this->global_prefix = $this->freistil_prefix.$this->global_prefix;
+			$this->blog_prefix = $this->freistil_prefix.$this->blog_prefix;
+
 
 			$this->cache_hits   =& $this->stats['get'];
 			$this->cache_misses =& $this->stats['add'];
@@ -537,11 +560,6 @@ if ( class_exists( 'Memcached' ) ) {
 
 
 	}
-} else {
 
-	if ( function_exists( 'wp_using_ext_object_cache' ) ) {
-		wp_using_ext_object_cache( false );
-	} else {
-		wp_die( 'Memcached class not available.' );
-	}
+
 }

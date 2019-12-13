@@ -33,10 +33,10 @@
 		} else {
 			$flushResponse.text("🚨");
 		}
-		clearTimeout(_flushResponseTimeout);
-		_flushResponseTimeout = setTimeout(function(){
-			$flushResponse.text("");
-		}, 1500);
+		// clearTimeout(_flushResponseTimeout);
+		// _flushResponseTimeout = setTimeout(function(){
+		// 	$flushResponse.text("");
+		// }, 1500);
 		setLoading(false);
 	}
 
@@ -52,6 +52,21 @@
 	function ajax_stats_response(response){
 		isRequestingStats = false;
 		console.log(response.data);
+	}
+
+	/**
+	 * memcache set disabled
+	 * @type {null}
+	 * @private
+	 */
+	let isRequestingSetDisabled = false;
+	function ajax_set_disabled(disabled){
+		if(isRequestingSetDisabled) return;
+		isRequestingSetDisabled = true;
+		const args = Settings.args
+		$.post(Settings.ajaxUrl, {
+			action: Settings.actions.disable,
+		})
 	}
 
 	let _isLoadingInterval = null;

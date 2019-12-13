@@ -6,10 +6,11 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Palasthotel\\WordPress\\UseMemcached\\AdminBar' => $baseDir . '/classes/AdminBar.inc',
-    'Palasthotel\\WordPress\\UseMemcached\\AdminNotices' => $baseDir . '/classes/AdminNotices.inc',
-    'Palasthotel\\WordPress\\UseMemcached\\Ajax' => $baseDir . '/classes/Ajax.inc',
-    'Palasthotel\\WordPress\\UseMemcached\\Assets' => $baseDir . '/classes/Assets.inc',
-    'Palasthotel\\WordPress\\UseMemcached\\Memcache' => $baseDir . '/classes/Memcache.inc',
-    'Palasthotel\\WordPress\\UseMemcached\\ObjectCacheFileHandler' => $baseDir . '/classes/ObjectCacheFileHandler.inc',
+    'Palasthotel\\WordPress\\UseMemcached\\AdminBar' => $baseDir . '/classes/AdminBar.php',
+    'Palasthotel\\WordPress\\UseMemcached\\AdminNotices' => $baseDir . '/classes/AdminNotices.php',
+    'Palasthotel\\WordPress\\UseMemcached\\Ajax' => $baseDir . '/classes/Ajax.php',
+    'Palasthotel\\WordPress\\UseMemcached\\Assets' => $baseDir . '/classes/Assets.php',
+    'Palasthotel\\WordPress\\UseMemcached\\Memcache' => $baseDir . '/classes/Memcache.php',
+    'Palasthotel\\WordPress\\UseMemcached\\ObjectCacheFileHandler' => $baseDir . '/classes/ObjectCacheFileHandler.php',
+    'Palasthotel\\WordPress\\UseMemcached\\Tools' => $baseDir . '/classes/Tools.php',
 );

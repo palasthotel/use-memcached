@@ -27,13 +27,17 @@ const DOMAIN = "use-memcached";
 //------------------------------------------------------------------------
 // remember to always update version in object-cache.php too
 //------------------------------------------------------------------------
-const OBJECT_CACHE_SCRIPT_VERSION = 4;
-const DESTINATION_FILE = WP_CONTENT_DIR."/object-cache.php";
+const OBJECT_CACHE_SCRIPT_VERSION = 10; // needs to be the same version like template file
+const DISABLE_OBJECT_CACHE_FILE   = WP_CONTENT_DIR."/uploads/use-memcached.disabled";
+const DESTINATION_FILE            = WP_CONTENT_DIR."/object-cache.php";
 
 //------------------------------------------------------------------------
 // js ajax api stuff
 //------------------------------------------------------------------------
 const HANDLE_ADMIN_JS = "use-memcached-admin-js";
+const AJAX_ACTION_DISABLE = "use_memcached_disable";
+const AJAX_ACTION_DISABLE_ARG = "disable_memcached";
+const AJAX_ACTION_DISABLE_ARG_VALUE = "please-do-so";
 const AJAX_ACTION_FLUSH = "use_memcached_flush";
 const AJAX_ACTION_STATS = "use_memcached_stats";
 
@@ -47,6 +51,7 @@ const AJAX_ACTION_STATS = "use_memcached_stats";
  * @property Ajax ajax
  * @property Assets assets
  * @property AdminNotices adminNotices
+ * @property Tools tools
  */
 class Plugin{
 
@@ -73,6 +78,7 @@ class Plugin{
 		$this->assets = new Assets($this);
 		$this->adminBar = new AdminBar($this);
 		$this->adminNotices = new AdminNotices($this);
+		$this->tools = new Tools($this);
 
 	}
 

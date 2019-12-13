@@ -34,6 +34,7 @@ class Assets {
 				"actions" => array(
 					"flush" => AJAX_ACTION_FLUSH,
 					"stats" => AJAX_ACTION_STATS,
+					"disable" => AJAX_ACTION_DISABLE,
 				)
 			)
 		);

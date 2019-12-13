@@ -56,6 +56,12 @@ class ObjectCacheFileHandler {
 		return ( ! $this->isOurObjectCacheFile() ) ? false : USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION;
 	}
 
+	function wasObjectCacheObjectLoaded(){
+		return defined('USE_MEMCACHED_OBJECT_CACHE_WAS_LOADED')
+		       &&
+		       USE_MEMCACHED_OBJECT_CACHE_WAS_LOADED == true;
+	}
+
 	/**
 	 * check for version match of template and actual object-cache.php file
 	 *

@@ -21,12 +21,13 @@ class ComposerStaticInitf06000f61a7631363ad613bde64d3c3d
     );
 
     public static $classMap = array (
-        'Palasthotel\\WordPress\\UseMemcached\\AdminBar' => __DIR__ . '/../..' . '/classes/AdminBar.inc',
-        'Palasthotel\\WordPress\\UseMemcached\\AdminNotices' => __DIR__ . '/../..' . '/classes/AdminNotices.inc',
-        'Palasthotel\\WordPress\\UseMemcached\\Ajax' => __DIR__ . '/../..' . '/classes/Ajax.inc',
-        'Palasthotel\\WordPress\\UseMemcached\\Assets' => __DIR__ . '/../..' . '/classes/Assets.inc',
-        'Palasthotel\\WordPress\\UseMemcached\\Memcache' => __DIR__ . '/../..' . '/classes/Memcache.inc',
-        'Palasthotel\\WordPress\\UseMemcached\\ObjectCacheFileHandler' => __DIR__ . '/../..' . '/classes/ObjectCacheFileHandler.inc',
+        'Palasthotel\\WordPress\\UseMemcached\\AdminBar' => __DIR__ . '/../..' . '/classes/AdminBar.php',
+        'Palasthotel\\WordPress\\UseMemcached\\AdminNotices' => __DIR__ . '/../..' . '/classes/AdminNotices.php',
+        'Palasthotel\\WordPress\\UseMemcached\\Ajax' => __DIR__ . '/../..' . '/classes/Ajax.php',
+        'Palasthotel\\WordPress\\UseMemcached\\Assets' => __DIR__ . '/../..' . '/classes/Assets.php',
+        'Palasthotel\\WordPress\\UseMemcached\\Memcache' => __DIR__ . '/../..' . '/classes/Memcache.php',
+        'Palasthotel\\WordPress\\UseMemcached\\ObjectCacheFileHandler' => __DIR__ . '/../..' . '/classes/ObjectCacheFileHandler.php',
+        'Palasthotel\\WordPress\\UseMemcached\\Tools' => __DIR__ . '/../..' . '/classes/Tools.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

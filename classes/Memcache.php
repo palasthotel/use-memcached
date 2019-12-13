@@ -37,6 +37,57 @@ class Memcache {
 		return ($asArray)? array(): "";
 	}
 
+	function getFreistilPrefix(){
+		global $wp_object_cache;
+		return isset($wp_object_cache->freistil_prefix)? $wp_object_cache->freistil_prefix:"";
+	}
+
+	/**
+	 * @return string
+	 */
+	function getGlobalPrefix(){
+		global $wp_object_cache;
+		return isset($wp_object_cache->global_prefix) ? $wp_object_cache->global_prefix: "";
+	}
+
+	/**
+	 * @return string
+	 */
+	function getBlogPrefix(){
+		global $wp_object_cache;
+		return isset($wp_object_cache->blog_prefix) ? $wp_object_cache->blog_prefix: "";
+	}
+
+	/**
+	 * check if memcached was disabled by user in settings
+	 * @return bool
+	 */
+	function isDisabled(){
+		return file_exists(DISABLE_OBJECT_CACHE_FILE);
+	}
+
+	/**
+	 * activate or deactivate use of memcache object-cache.php
+	 * @param $disable
+	 */
+	function setDisabled($disable){
+		if($disable){
+			file_put_contents(
+				DISABLE_OBJECT_CACHE_FILE,
+				""
+			);
+		} else {
+			unlink(DISABLE_OBJECT_CACHE_FILE);
+		}
+	}
+
+	/**
+	 * toggle disabled state
+	 */
+	function toggleDisabled(){
+		$this->setDisabled(!$this->isDisabled());
+	}
+
 	/**
 	 *
 	 */

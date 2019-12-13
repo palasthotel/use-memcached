@@ -73,7 +73,11 @@ class AdminNotices {
 				),
 				self::TYPE_WARNING
 			);
-		} else if ( ! function_exists( 'use_memcached' ) ) {
+		} else if (
+			! function_exists( 'use_memcached' )
+			&&
+			!$this->plugin->memcache->isDisabled()
+		) {
 			$message   = sprintf(
 				__( "Could not find %s function.", DOMAIN ),
 				"use_memcached"
@@ -87,7 +91,11 @@ class AdminNotices {
 
 			$this->enqueue( $message );
 
-		} else if ( ! $this->plugin->memcache->areAllServersConnected() ) {
+		} else if (
+			! $this->plugin->memcache->areAllServersConnected()
+			&&
+			!$this->plugin->memcache->isDisabled()
+		) {
 			$this->enqueue(
 				__( "Some memcache servers are not reachable. Please check memcached service and connection settings.", DOMAIN )
 			);
