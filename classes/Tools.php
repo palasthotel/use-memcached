@@ -79,15 +79,35 @@ class Tools {
 	}
 
 	private function renderStats(){
-		$stats = $this->plugin->memcache->stats();
-
-		echo "<p>";
-		echo "Freistil Prefix: ".$this->plugin->memcache->getGlobalPrefix()."<br/>";
-		echo "Global Prefix: ".$this->plugin->memcache->getGlobalPrefix()."<br/>";
-		echo "Blog Prefix: ".$this->plugin->memcache->getBlogPrefix();
-		echo "</p>";
 
 
-		echo "<textarea style='width: 100%;' rows='15'>$stats</textarea>";
+		$this->renderRow(
+			__("Freistil prefix", DOMAIN),
+			$this->plugin->memcache->getFreistilPrefix()
+		);
+		$this->renderRow(
+			__("Global prefix", DOMAIN),
+			$this->plugin->memcache->getGlobalPrefix()
+		);
+		$this->renderRow(
+			__("Blog prefix", DOMAIN),
+			$this->plugin->memcache->getBlogPrefix()
+		);
+
+		$stats = $this->plugin->memcache->stats(true);
+		foreach ($stats as $buckets){
+			foreach ($buckets as $ip => $server){
+				echo "<h3>$ip</h3>";
+				foreach ($server as $key =>  $value){
+					$this->renderRow($key, $value);
+				}
+
+			}
+		}
+
+	}
+
+	private function renderRow($key, $value){
+		echo "<div><p><strong>$key:</strong> $value</p></div>";
 	}
 }
