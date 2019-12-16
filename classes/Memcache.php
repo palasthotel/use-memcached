@@ -63,7 +63,10 @@ class Memcache {
 	 * @return bool
 	 */
 	function isEnabled(){
-		return file_exists(ENABLE_OBJECT_CACHE_FILE);
+		if(class_exists("\UseMemcachedConfiguration")){
+			return \UseMemcachedConfiguration::instance()->isEnabled();
+		}
+		return false;
 	}
 
 	/**
@@ -72,13 +75,8 @@ class Memcache {
 	 * @param $isEnabled
 	 */
 	function setEnabled( $isEnabled){
-		if ( $isEnabled){
-			file_put_contents(
-				ENABLE_OBJECT_CACHE_FILE,
-				""
-			);
-		} else {
-			unlink(ENABLE_OBJECT_CACHE_FILE);
+		if(class_exists("\UseMemcachedConfiguration")){
+			\UseMemcachedConfiguration::instance()->setEnabled($isEnabled);
 		}
 	}
 

@@ -27,19 +27,19 @@ const DOMAIN = "use-memcached";
 //------------------------------------------------------------------------
 // remember to always update version in object-cache.php too
 //------------------------------------------------------------------------
-const OBJECT_CACHE_SCRIPT_VERSION = 11; // needs to be the same version like template file
-const ENABLE_OBJECT_CACHE_FILE   = WP_CONTENT_DIR."/uploads/use-memcached.enabled";
-const DESTINATION_FILE            = WP_CONTENT_DIR."/object-cache.php";
+const OBJECT_CACHE_SCRIPT_VERSION = 15; // needs to be the same version like template file
+const ENABLE_OBJECT_CACHE_FILE    = WP_CONTENT_DIR . "/uploads/use-memcached.enabled";
+const DESTINATION_FILE            = WP_CONTENT_DIR . "/object-cache.php";
 
 //------------------------------------------------------------------------
 // js ajax api stuff
 //------------------------------------------------------------------------
-const HANDLE_ADMIN_JS = "use-memcached-admin-js";
-const AJAX_ACTION_DISABLE = "use_memcached_disable";
-const AJAX_ACTION_DISABLE_ARG = "disable_memcached";
+const HANDLE_ADMIN_JS               = "use-memcached-admin-js";
+const AJAX_ACTION_DISABLE           = "use_memcached_disable";
+const AJAX_ACTION_DISABLE_ARG       = "disable_memcached";
 const AJAX_ACTION_DISABLE_ARG_VALUE = "please-do-so";
-const AJAX_ACTION_FLUSH = "use_memcached_flush";
-const AJAX_ACTION_STATS = "use_memcached_stats";
+const AJAX_ACTION_FLUSH             = "use_memcached_flush";
+const AJAX_ACTION_STATS             = "use_memcached_stats";
 
 /**
  * @property ObjectCacheFileHandler objectCacheFileHandler
@@ -53,16 +53,16 @@ const AJAX_ACTION_STATS = "use_memcached_stats";
  * @property AdminNotices adminNotices
  * @property Tools tools
  */
-class Plugin{
+class Plugin {
 
 	/**
 	 * Plugin constructor.
 	 */
 	private function __construct() {
 
-		$this->url = plugin_dir_url(__FILE__);
-		$this->path = plugin_dir_path(__FILE__);
-		$this->templatesPath = $this->path."/templates/";
+		$this->url           = plugin_dir_url( __FILE__ );
+		$this->path          = plugin_dir_path( __FILE__ );
+		$this->templatesPath = $this->path . "/templates/";
 
 		load_plugin_textdomain(
 			DOMAIN,
@@ -70,15 +70,15 @@ class Plugin{
 			dirname( plugin_basename( __FILE__ ) ) . '/languages'
 		);
 
-		require_once dirname(__FILE__)."/vendor/autoload.php";
+		require_once dirname( __FILE__ ) . "/vendor/autoload.php";
 
-		$this->objectCacheFileHandler = new ObjectCacheFileHandler($this);
-		$this->memcache = new Memcache($this);
-		$this->ajax = new Ajax($this);
-		$this->assets = new Assets($this);
-		$this->adminBar = new AdminBar($this);
-		$this->adminNotices = new AdminNotices($this);
-		$this->tools = new Tools($this);
+		$this->objectCacheFileHandler = new ObjectCacheFileHandler( $this );
+		$this->memcache               = new Memcache( $this );
+		$this->ajax                   = new Ajax( $this );
+		$this->assets                 = new Assets( $this );
+		$this->adminBar               = new AdminBar( $this );
+		$this->adminNotices           = new AdminNotices( $this );
+		$this->tools                  = new Tools( $this );
 
 		register_activation_hook( __FILE__, array( $this, "activation" ) );
 		register_deactivation_hook( __FILE__, array( $this, "deactivation" ) );
@@ -95,29 +95,31 @@ class Plugin{
 	/**
 	 * on deactivation
 	 */
-	function deactivation(){
-		// delete file that enables use of use memcached object-cache.php file
-		$this->memcache->setEnabled(false);
+	function deactivation() {
 		$this->memcache->flush();
-		if($this->objectCacheFileHandler->isOurObjectCacheFile()){
-			// if we can identify object-cache.php file as ours
+		// delete file that enables use of use memcached object-cache.php file
+		$this->memcache->setEnabled( false );
+		// if we can identify object-cache.php file as ours
+		if ( $this->objectCacheFileHandler->isOurObjectCacheFile() ) {
 			// try to delete it on deactivation
-			unlink(DESTINATION_FILE);
+			unlink( DESTINATION_FILE );
 		}
 	}
 
-	private static $instance = null;
+	private static $instance = NULL;
 
 	/**
 	 * @return Plugin
 	 */
-	public static function instance(){
-		if(self::$instance === null){
+	public static function instance() {
+		if ( self::$instance === NULL ) {
 			self::$instance = new Plugin();
 		}
+
 		return self::$instance;
 	}
 }
+
 Plugin::instance();
 
-require_once dirname(__FILE__)."/cli/wp-cli.php";
+require_once dirname( __FILE__ ) . "/cli/wp-cli.php";

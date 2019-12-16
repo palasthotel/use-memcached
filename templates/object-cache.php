@@ -3,10 +3,108 @@
 // this file was copied here by use-memcached plugin
 
 // always count up if file changed
-define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 11 );
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 15 );
+// this file needs to exist. otherwise we will fall back to core WP_Object_Cache
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE', WP_CONTENT_DIR . "/uploads/use-memcached.enabled" );
+
+// --------------------------------------------------------------------
+// UseMemcached configuration
+// --------------------------------------------------------------------
+class UseMemcachedConfiguration{
+
+	private $config = array();
+
+	/**
+	 * UseMemcachedConfiguration constructor.
+	 */
+	public function __construct() {
+		$this->fetch();
+	}
+
+	/**
+	 * check if file exists
+	 * @return bool
+	 */
+	function isEnabled(){
+		return is_file(USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE);
+	}
+
+	/**
+	 * @param boolean $isEnabled
+	 */
+	function setEnabled( $isEnabled){
+		if ( $isEnabled){
+			$this->persist();
+		} else {
+			unlink(USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE);
+		}
+	}
+
+	/**
+	 * @param int $seconds
+	 *
+	 * @return \UseMemcachedConfiguration
+	 */
+	function setExpires($seconds){
+		$this->config["expires"] = ( $seconds > 0 )? intval($seconds): 0;
+		return $this;
+	}
+
+	/**
+	 * @return int
+	 */
+	function getExpires(){
+		return intval($this->config["expires"]);
+	}
+
+	/**
+	 * loads and overwrites configuration that was persisted
+	 */
+	function fetch(){
+		$config = json_decode(file_get_contents(USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE), true);
+		$tmp = (is_array($config))?
+			$config :
+			array(
+				"expires" => 30,
+			);
+		$this->config = array_merge($this->config, $tmp);
+	}
+
+	/**
+	 * persists configuration
+	 * @return bool|int
+	 */
+	function persist(){
+		return file_put_contents(
+			USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE,
+			json_encode($this->config)
+		);
+	}
+
+	private static $instance;
+
+	/**
+	 * @return \UseMemcachedConfiguration
+	 */
+	public static function instance(){
+		if(self::$instance == null){
+			self::$instance = new UseMemcachedConfiguration();
+		}
+		return self::$instance;
+	}
+
+}
+
+/**
+ * @return \UseMemcachedConfiguration
+ */
+function use_memcached_get_configuration(){
+	return UseMemcachedConfiguration::instance();
+}
+
 
 if (
-	! is_file( WP_CONTENT_DIR . "/uploads/use-memcached.enabled" )
+	! use_memcached_get_configuration()->isEnabled()
 	||
 	! class_exists( 'Memcached' )
 ) {
@@ -19,6 +117,7 @@ if (
 
 
 } else {
+
 
 	// if we are here we will load our object cache logic
 	define( 'USE_MEMCACHED_OBJECT_CACHE_WAS_LOADED', true );
@@ -38,7 +137,7 @@ if (
 	}
 
 
-	function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
+	function wp_cache_add( $key, $data, $group = '', $expire = 30 ) {
 		return use_memcached()->add( $key, $data, $group, $expire );
 	}
 
@@ -90,7 +189,7 @@ if (
 	 * @param int $expire
 	 * @param string $group
 	 */
-	function wp_cache_set_multi( $items, $expire = 0, $group = 'default' ) {
+	function wp_cache_set_multi( $items, $expire = 30, $group = 'default' ) {
 		use_memcached()->set_multi( $items, $expire, $group );
 	}
 
@@ -99,11 +198,11 @@ if (
 		$wp_object_cache = new WP_Object_Cache();
 	}
 
-	function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
+	function wp_cache_replace( $key, $data, $group = '', $expire = 30 ) {
 		return use_memcached()->replace( $key, $data, $group, $expire );
 	}
 
-	function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
+	function wp_cache_set( $key, $data, $group = '', $expire = 30 ) {
 		if ( defined( 'WP_INSTALLING' ) == false ) {
 			return use_memcached()->set( $key, $data, $group, $expire );
 		} else {
@@ -119,6 +218,9 @@ if (
 		use_memcached()->add_non_persistent_groups( $groups );
 	}
 
+	// --------------------------------------------------------------------
+	// WP_Object_Cache implementation
+	// --------------------------------------------------------------------
 	class WP_Object_Cache {
 
 		public $global_groups = array(); // (was private)
@@ -136,9 +238,107 @@ if (
 		public $group_ops = array(); // (was private)
 		public $memcache_debug = array(); // added for ElasticPress compatibility
 		public $cache_enabled = true; // modified to allow wordpress to properly disable object cache in wp-activate.php +22 (was private)
-		private $default_expiration = 0;
+		private $default_expiration = 30;
 
-		function add( $id, $data, $group = 'default', $expire = 0 ) {
+		// --------------------------------------------------------------------
+		// WP_Object_Cache constructor
+		// --------------------------------------------------------------------
+		function __construct() {
+
+			$this->config = new UseMemcachedConfiguration();
+			$this->default_expiration = $this->config->getExpires();
+
+
+			global $memcached_servers;
+			$this->freistil_prefix = "";
+
+
+			if ( isset( $memcached_servers ) ) {
+				$buckets = $memcached_servers;
+			} else {
+				// check if we are on freistil instructure
+
+				$freistilMemcachedSettings = ABSPATH . "/../config/drupal/settings-d8-memcache.php";
+				if ( file_exists( $freistilMemcachedSettings ) ) {
+					require_once $freistilMemcachedSettings;
+
+					/**
+					 * @var array $settings
+					 */
+
+					if ( is_array( $settings ) ) {
+
+						if (
+							isset( $settings["memcache_servers"] )
+							&&
+							is_array( $settings["memcache_servers"] )
+						) {
+							$buckets = array_keys( $settings["memcache_servers"] );
+						}
+
+						if (
+							isset( $settings["memcache"] )
+							&&
+							is_array( $settings["memcache"] )
+							&&
+							isset( $settings["memcache"]["key_prefix"] )
+						) {
+							$this->freistil_prefix = $settings["memcache"]["key_prefix"];
+						}
+
+					}
+
+
+				} else {
+					$buckets = array( '127.0.0.1:11211' );
+				}
+			}
+
+			reset( $buckets );
+			if ( is_int( key( $buckets ) ) ) {
+				$buckets = array( 'default' => $buckets );
+			}
+
+			foreach ( $buckets as $bucket => $servers ) {
+				$this->mc[ $bucket ] = new Memcached();
+
+				$instances = array();
+				foreach ( $servers as $server ) {
+					@list( $node, $port ) = explode( ':', $server );
+					if ( empty( $port ) ) {
+						$port = ini_get( 'memcache.default_port' );
+					}
+					$port = intval( $port );
+					if ( ! $port ) {
+						$port = 11211;
+					}
+
+					$instances[] = array( $node, $port, 1 );
+				}
+				$this->mc[ $bucket ]->addServers( $instances );
+			}
+
+			global $blog_id, $table_prefix;
+			$this->global_prefix = '';
+			$this->blog_prefix   = '';
+			if ( function_exists( 'is_multisite' ) ) {
+				$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;
+				$this->blog_prefix   = ( is_multisite() ? $blog_id : $table_prefix ) . ':';
+			}
+
+			$this->global_prefix = $this->freistil_prefix.$this->global_prefix;
+			$this->blog_prefix = $this->freistil_prefix.$this->blog_prefix;
+
+
+			$this->cache_hits   =& $this->stats['get'];
+			$this->cache_misses =& $this->stats['add'];
+		}
+
+		// --------------------------------------------------------------------
+		// WP_Object_Cache methods
+		// --------------------------------------------------------------------
+
+		function add( $id, $data, $group = 'default', $expire = 30 ) {
 			$key = $this->key( $id, $group );
 
 			if ( is_object( $data ) ) {
@@ -347,9 +547,9 @@ if (
 			return preg_replace( '/\s+/', '', WP_CACHE_KEY_SALT . "$prefix$group:$key" );
 		}
 
-		function replace( $id, $data, $group = 'default', $expire = 0 ) {
+		function replace( $id, $data, $group = 'default', $expire = 30 ) {
 			$key    = $this->key( $id, $group );
-			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
+			$expire = ( $expire == 30 ) ? $this->default_expiration : $expire;
 			$mc     =& $this->get_mc( $group );
 
 			if ( is_object( $data ) ) {
@@ -364,7 +564,7 @@ if (
 			return $result;
 		}
 
-		function set( $id, $data, $group = 'default', $expire = 0 ) {
+		function set( $id, $data, $group = 'default', $expire = 30 ) {
 			$key = $this->key( $id, $group );
 			if ( isset( $this->cache[ $key ] ) && ( 'checkthedatabaseplease' === $this->cache[ $key ] ) ) {
 				return false;
@@ -380,17 +580,17 @@ if (
 				return true;
 			}
 
-			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
+			$expire = ( $expire == 30 ) ? $this->default_expiration : $expire;
 			$mc     =& $this->get_mc( $group );
 			$result = $mc->set( $key, $data, $expire );
 
 			return $result;
 		}
 
-		function set_multi( $items, $expire = 0, $group = 'default' ) {
+		function set_multi( $items, $expire = 30, $group = 'default' ) {
 			$sets   = array();
 			$mc     =& $this->get_mc( $group );
-			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
+			$expire = ( $expire == 30 ) ? $this->default_expiration : $expire;
 
 			foreach ( $items as $i => $item ) {
 				if ( empty( $item[2] ) ) {
@@ -472,94 +672,9 @@ if (
 			return $this->mc['default'];
 		}
 
-		function __construct() {
-			global $memcached_servers;
-			$this->freistil_prefix = "";
-
-
-			if ( isset( $memcached_servers ) ) {
-				$buckets = $memcached_servers;
-			} else {
-				// check if we are on freistil instructure
-
-				$freistilMemcachedSettings = ABSPATH . "/../config/drupal/settings-d8-memcache.php";
-				if ( file_exists( $freistilMemcachedSettings ) ) {
-					require_once $freistilMemcachedSettings;
-
-					/**
-					 * @var array $settings
-					 */
-
-					if ( is_array( $settings ) ) {
-
-						if (
-							isset( $settings["memcache_servers"] )
-							&&
-							is_array( $settings["memcache_servers"] )
-						) {
-							$buckets = array_keys( $settings["memcache_servers"] );
-						}
-
-						if (
-							isset( $settings["memcache"] )
-							&&
-							is_array( $settings["memcache"] )
-							&&
-							isset( $settings["memcache"]["key_prefix"] )
-						) {
-							$this->freistil_prefix = $settings["memcache"]["key_prefix"];
-						}
-
-					}
-
-
-				} else {
-					$buckets = array( '127.0.0.1:11211' );
-				}
-			}
-
-			reset( $buckets );
-			if ( is_int( key( $buckets ) ) ) {
-				$buckets = array( 'default' => $buckets );
-			}
-
-			foreach ( $buckets as $bucket => $servers ) {
-				$this->mc[ $bucket ] = new Memcached();
-
-				$instances = array();
-				foreach ( $servers as $server ) {
-					@list( $node, $port ) = explode( ':', $server );
-					if ( empty( $port ) ) {
-						$port = ini_get( 'memcache.default_port' );
-					}
-					$port = intval( $port );
-					if ( ! $port ) {
-						$port = 11211;
-					}
-
-					$instances[] = array( $node, $port, 1 );
-				}
-				$this->mc[ $bucket ]->addServers( $instances );
-			}
-
-			global $blog_id, $table_prefix;
-			$this->global_prefix = '';
-			$this->blog_prefix   = '';
-			if ( function_exists( 'is_multisite' ) ) {
-				$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;
-				$this->blog_prefix   = ( is_multisite() ? $blog_id : $table_prefix ) . ':';
-			}
-
-			$this->global_prefix = $this->freistil_prefix.$this->global_prefix;
-			$this->blog_prefix = $this->freistil_prefix.$this->blog_prefix;
-
-
-			$this->cache_hits   =& $this->stats['get'];
-			$this->cache_misses =& $this->stats['add'];
-		}
-
-
 	}
+
+
 
 
 }
