@@ -33,7 +33,7 @@ class Ajax {
 
 			wp_die("No access rights");
 		}
-		$this->plugin->memcache->toggleDisabled();
+		$this->plugin->memcache->toggleEnabled();
 		wp_send_json_success();
 
 	}

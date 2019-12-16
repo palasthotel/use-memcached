@@ -42,7 +42,7 @@ class AdminNotices {
 				__( "Missing object-cache.php could not be copied to wp-content folder. Please manually copy the template file from plugin folder use-memcached/templates/object-cache.php to wp-content/object-cache.php.", DOMAIN )
 			);
 		} else if (
-		$fh->fileWasCopiedInThisRequest()
+			$fh->fileWasCopiedInThisRequest()
 		) {
 			// file was not loaded but was copied in this request
 			$this->enqueue(
@@ -76,7 +76,7 @@ class AdminNotices {
 		} else if (
 			! function_exists( 'use_memcached' )
 			&&
-			!$this->plugin->memcache->isDisabled()
+			$this->plugin->memcache->isEnabled()
 		) {
 			$message   = sprintf(
 				__( "Could not find %s function.", DOMAIN ),
@@ -94,10 +94,27 @@ class AdminNotices {
 		} else if (
 			! $this->plugin->memcache->areAllServersConnected()
 			&&
-			!$this->plugin->memcache->isDisabled()
+			$this->plugin->memcache->isEnabled()
 		) {
 			$this->enqueue(
 				__( "Some memcache servers are not reachable. Please check memcached service and connection settings.", DOMAIN )
+			);
+		} else if(
+			!$this->plugin->memcache->isEnabled()
+			&&
+			!(isset($_GET["page"]) && $_GET["page"] == Tools::SLUG)
+		){
+			$this->enqueue(
+				sprintf(
+					"%s<br/><br/><a href='%s' class='button button-small button-secondary'>%s</a>",
+					__(
+						"Plugin is active but memcached is not enabled.",
+						DOMAIN
+					),
+					$this->plugin->tools->getUrl(),
+					__('Enable memcached here', DOMAIN)
+				),
+				self::TYPE_INFO
 			);
 		}
 

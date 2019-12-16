@@ -62,30 +62,31 @@ class Memcache {
 	 * check if memcached was disabled by user in settings
 	 * @return bool
 	 */
-	function isDisabled(){
-		return file_exists(DISABLE_OBJECT_CACHE_FILE);
+	function isEnabled(){
+		return file_exists(ENABLE_OBJECT_CACHE_FILE);
 	}
 
 	/**
 	 * activate or deactivate use of memcache object-cache.php
-	 * @param $disable
+	 *
+	 * @param $isEnabled
 	 */
-	function setDisabled($disable){
-		if($disable){
+	function setEnabled( $isEnabled){
+		if ( $isEnabled){
 			file_put_contents(
-				DISABLE_OBJECT_CACHE_FILE,
+				ENABLE_OBJECT_CACHE_FILE,
 				""
 			);
 		} else {
-			unlink(DISABLE_OBJECT_CACHE_FILE);
+			unlink(ENABLE_OBJECT_CACHE_FILE);
 		}
 	}
 
 	/**
 	 * toggle disabled state
 	 */
-	function toggleDisabled(){
-		$this->setDisabled(!$this->isDisabled());
+	function toggleEnabled(){
+		$this->setEnabled(!$this->isEnabled());
 	}
 
 	/**

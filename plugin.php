@@ -27,8 +27,8 @@ const DOMAIN = "use-memcached";
 //------------------------------------------------------------------------
 // remember to always update version in object-cache.php too
 //------------------------------------------------------------------------
-const OBJECT_CACHE_SCRIPT_VERSION = 10; // needs to be the same version like template file
-const DISABLE_OBJECT_CACHE_FILE   = WP_CONTENT_DIR."/uploads/use-memcached.disabled";
+const OBJECT_CACHE_SCRIPT_VERSION = 11; // needs to be the same version like template file
+const ENABLE_OBJECT_CACHE_FILE   = WP_CONTENT_DIR."/uploads/use-memcached.enabled";
 const DESTINATION_FILE            = WP_CONTENT_DIR."/object-cache.php";
 
 //------------------------------------------------------------------------
@@ -80,6 +80,30 @@ class Plugin{
 		$this->adminNotices = new AdminNotices($this);
 		$this->tools = new Tools($this);
 
+		register_activation_hook( __FILE__, array( $this, "activation" ) );
+		register_deactivation_hook( __FILE__, array( $this, "deactivation" ) );
+	}
+
+	/**
+	 * on plugin activation
+	 */
+	function activation() {
+		// nothing yet
+		$this->memcache->flush();
+	}
+
+	/**
+	 * on deactivation
+	 */
+	function deactivation(){
+		// delete file that enables use of use memcached object-cache.php file
+		$this->memcache->setEnabled(false);
+		$this->memcache->flush();
+		if($this->objectCacheFileHandler->isOurObjectCacheFile()){
+			// if we can identify object-cache.php file as ours
+			// try to delete it on deactivation
+			unlink(DESTINATION_FILE);
+		}
 	}
 
 	private static $instance = null;

@@ -3,10 +3,10 @@
 // this file was copied here by use-memcached plugin
 
 // always count up if file changed
-define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 10 );
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 11 );
 
 if (
-	is_file( WP_CONTENT_DIR . "/uploads/use-memcached.disabled" )
+	! is_file( WP_CONTENT_DIR . "/uploads/use-memcached.enabled" )
 	||
 	! class_exists( 'Memcached' )
 ) {

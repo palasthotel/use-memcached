@@ -42,7 +42,11 @@ class Tools {
 			&&
 			$_POST['use_memcached_disable_toggle'] == "yes"
 		){
-			$this->plugin->memcache->toggleDisabled();
+			$this->plugin->memcache->toggleEnabled();
+			wp_redirect(add_query_arg("use-memcached-flush", "do-flush",$this->getUrl()));
+		}
+		if(isset($_GET["use-memcached-flush"]) && $_GET["use-memcached-flush"] == "do-flush"){
+			$this->plugin->memcache->flush();
 			wp_redirect($this->getUrl());
 		}
 	}
@@ -51,12 +55,12 @@ class Tools {
 		echo "<div class='wrap'>";
 		echo sprintf("<h2>%s</h2>", __("Use Memcached", DOMAIN));
 
-		$buttonText = ($this->plugin->memcache->isDisabled())?
+		$buttonText = (!$this->plugin->memcache->isEnabled())?
 			__("Memcached is disabled. Enable memcached!", DOMAIN)
 			:
 			__("Memcache is enabled. Disable memcached!", DOMAIN);
 
-		$primaryClass = ($this->plugin->memcache->isDisabled())?
+		$primaryClass = (!$this->plugin->memcache->isEnabled())?
 			"": "button-primary";
 
 		echo "<form method='post'>";
@@ -66,7 +70,7 @@ class Tools {
 			echo "</p>";
 		echo "</form>";
 
-		if(!$this->plugin->memcache->isDisabled()){
+		if($this->plugin->memcache->isEnabled()){
 			$this->renderStats();
 		} else {
 			printf(
