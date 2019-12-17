@@ -114,7 +114,7 @@ class AdminNotices {
 					$this->plugin->tools->getUrl(),
 					__('Enable memcached here', DOMAIN)
 				),
-				self::TYPE_INFO
+				self::TYPE_WARNING
 			);
 		}
 

@@ -33,27 +33,22 @@ class AdminBar {
 		$title = __("Memcache is active", DOMAIN);
 		if(!$this->plugin->memcache->isEnabled()){
 			$title = __("Memcache is disabled", DOMAIN);
-			$style = "background-color: #90A4AE";
+			$style = "background-color: #FF9100";
 		} else if ( ! $allServersConnected ) {
 			$title = __("Memcache is not working", DOMAIN);
 			$style = "background-color: #F44336;";
 		}
 
-		$wp_admin_bar->add_node( array(
-			'id'    => "use-memcached-info",
-			'title' => "<div style='$style;margin-left: -10px;margin-right: -10px;padding: 0 10px;' title='$title'>💾 Cache</div>",
-		) );
+		$title_text = __("💾 Cache", DOMAIN);
+		$title_link = sprintf(
+			"<a style='color: white;' href='%s'>%s</a>",
+			$this->plugin->tools->getUrl(),
+			$title_text
+		);
 
 		$wp_admin_bar->add_node( array(
-			'id'     => 'use-memcached-settings',
-			'title'  => '<div style="cursor: pointer;">' .
-			            sprintf(
-			            	"<a href='%s'>%s</a>",
-				            $this->plugin->tools->getUrl(),
-				            __( 'ℹ️ Info', DOMAIN )
-			            ).
-			            '</div>',
-			'parent' => "use-memcached-info",
+			'id'    => "use-memcached-info",
+			'title' => "<div style='$style;margin-left: -10px;margin-right: -10px;padding: 0 10px;' title='$title'>$title_link</div>",
 		) );
 
 		if($allServersConnected){

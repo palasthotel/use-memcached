@@ -3,9 +3,10 @@
 // this file was copied here by use-memcached plugin
 
 // always count up if file changed
-define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 18 );
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 20 );
 // this file needs to exist. otherwise we will fall back to core WP_Object_Cache
 define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE', WP_CONTENT_DIR . "/uploads/use-memcached.enabled" );
+define( 'USE_MEMCACHED_FREISTIL_SETTINGS_FILE', ABSPATH . "/../config/drupal/settings-d8-memcache.php");
 
 // --------------------------------------------------------------------
 // UseMemcached configuration
@@ -55,6 +56,15 @@ class UseMemcachedConfiguration{
 	 */
 	function getExpires(){
 		return intval($this->config["expires"]);
+	}
+
+	function isFreistil(){
+		return is_file(USE_MEMCACHED_FREISTIL_SETTINGS_FILE);
+	}
+
+	function getFreistilSettings(){
+		include USE_MEMCACHED_FREISTIL_SETTINGS_FILE;
+		return $settings;
 	}
 
 	/**
@@ -268,16 +278,14 @@ if (
 			if ( isset( $memcached_servers ) ) {
 				$buckets = $memcached_servers;
 			} else {
-				// check if we are on freistil instructure
 
-				$freistilMemcachedSettings = ABSPATH . "/../config/drupal/settings-d8-memcache.php";
-				if ( file_exists( $freistilMemcachedSettings ) ) {
-					require_once $freistilMemcachedSettings;
+				// check if we are on Freistil infrastructure
+				if ( $this->config->isFreistil() ) {
+					$settings = $this->config->getFreistilSettings();
 
 					/**
 					 * @var array $settings
 					 */
-
 					if ( is_array( $settings ) ) {
 
 						if (

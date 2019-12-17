@@ -52,15 +52,23 @@ class Tools {
 	}
 
 	public function render(){
+
 		echo "<div class='wrap'>";
 		echo sprintf("<h2>%s</h2>", __("Use Memcached", DOMAIN));
 
-		$buttonText = (!$this->plugin->memcache->isEnabled())?
+		if(!function_exists("use_memcached_get_configuration")){
+			printf("<p>%s</p>", __("Cannot find use_memcached_get_configuration function.", DOMAIN));
+			return;
+		}
+
+		$config = use_memcached_get_configuration();
+
+		$buttonText = (!$config->isEnabled())?
 			__("Memcached is disabled. Enable memcached!", DOMAIN)
 			:
 			__("Memcache is enabled. Disable memcached!", DOMAIN);
 
-		$primaryClass = (!$this->plugin->memcache->isEnabled())?
+		$primaryClass = (!$config->isEnabled())?
 			"": "button-primary";
 
 		echo "<form method='post'>";
@@ -70,7 +78,7 @@ class Tools {
 			echo "</p>";
 		echo "</form>";
 
-		if($this->plugin->memcache->isEnabled()){
+		if($config->isEnabled()){
 			$this->renderStats();
 		} else {
 			printf(
@@ -83,6 +91,16 @@ class Tools {
 	}
 
 	private function renderStats(){
+
+		$config = use_memcached_get_configuration();
+		if($config->isFreistil()){
+			echo "<p>We have Freistil infrastructure</p>";
+			echo "<pre>";
+			var_dump($config->getFreistilSettings());
+			echo "</pre>";
+		} else {
+			echo "<p>We do not have Freistil infrastructure</p>";
+		}
 
 
 		$this->renderRow(
