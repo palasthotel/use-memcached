@@ -3,7 +3,7 @@
 // this file was copied here by use-memcached plugin
 
 // always count up if file changed
-define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 15 );
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 17 );
 // this file needs to exist. otherwise we will fall back to core WP_Object_Cache
 define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE', WP_CONTENT_DIR . "/uploads/use-memcached.enabled" );
 
@@ -62,12 +62,14 @@ class UseMemcachedConfiguration{
 	 */
 	function fetch(){
 		$config = json_decode(file_get_contents(USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE), true);
-		$tmp = (is_array($config))?
-			$config :
+		$tmp = (is_array($config))? $config : array();
+		$this->config = array_merge(
 			array(
 				"expires" => 30,
-			);
-		$this->config = array_merge($this->config, $tmp);
+			),
+			$this->config,
+			$tmp
+		);
 	}
 
 	/**
