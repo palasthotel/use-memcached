@@ -16,6 +16,14 @@ class AdminBar {
 	 */
 	public function __construct( $plugin ) {
 		$this->plugin = $plugin;
+		add_action( 'init', array($this, 'init'));
+
+	}
+
+	public function init(){
+		if(!current_user_can("manage_options")) return;
+
+		$this->plugin->assets->enqueueAdminJS();
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar' ), 40 );
 	}
 
@@ -23,6 +31,7 @@ class AdminBar {
 	 * admin bar
 	 */
 	function admin_bar() {
+
 		/**
 		 * @var \WP_Admin_Bar $wp_admin_bar
 		 */
@@ -71,8 +80,6 @@ class AdminBar {
 			) );
 		}
 
-
-		$this->plugin->assets->enqueueAdminJS();
 
 	}
 

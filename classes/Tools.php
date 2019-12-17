@@ -15,7 +15,7 @@ class Tools {
 	public function __construct(Plugin $plugin) {
 		$this->plugin = $plugin;
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
-		add_action('admin_init', array($this, 'save_settings'));
+		add_action( 'admin_init', array($this, 'save_settings') );
 	}
 
 	/**
@@ -37,6 +37,9 @@ class Tools {
 	}
 
 	function save_settings(){
+
+		if(!current_user_can("manage_options")) return;
+
 		if(
 			isset($_POST['use_memcached_disable_toggle'])
 			&&

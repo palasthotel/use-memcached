@@ -17,6 +17,7 @@ class Ajax {
 	public function __construct( $plugin ) {
 		$this->plugin = $plugin;
 		add_action( 'wp_ajax_' . AJAX_ACTION_FLUSH, array( $this, 'flush' ) );
+		add_action( 'wp_ajax_no_priv' . AJAX_ACTION_FLUSH, array( $this, 'flush' ) );
 		add_action( 'wp_ajax_' . AJAX_ACTION_DISABLE, array(
 			$this,
 			'disable',
@@ -29,9 +30,13 @@ class Ajax {
 	 */
 	function disable() {
 
-		if(current_user_can("")){
-
-			wp_die("No access rights");
+		if(!current_user_can("manage_options")){
+			wp_die(
+				"No access.",
+				"Restricted area",
+				array(
+					"response" => 401
+				));
 		}
 		$this->plugin->memcache->toggleEnabled();
 		wp_send_json_success();
@@ -42,6 +47,14 @@ class Ajax {
 	 * flush memcached ajax response
 	 */
 	function flush() {
+		if(!current_user_can("manage_options")){
+			wp_die(
+				"No access.",
+				"Restricted area",
+				array(
+				"response" => 401
+			));
+		}
 		wp_send_json_success( array(
 			"response" => $this->plugin->memcache->flush(),
 		) );
@@ -52,6 +65,16 @@ class Ajax {
 	 * get memcached stats ajax response
 	 */
 	function stats() {
+
+		if(!current_user_can("manage_options")){
+			wp_die(
+				"No access.",
+				"Restricted area",
+				array(
+					"response" => 401
+				));
+		}
+
 		wp_send_json_success( array(
 			"response" => $this->plugin->memcache->stats( true ),
 		) );
