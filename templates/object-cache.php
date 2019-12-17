@@ -3,7 +3,7 @@
 // this file was copied here by use-memcached plugin
 
 // always count up if file changed
-define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 17 );
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 18 );
 // this file needs to exist. otherwise we will fall back to core WP_Object_Cache
 define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE', WP_CONTENT_DIR . "/uploads/use-memcached.enabled" );
 
@@ -111,6 +111,10 @@ if (
 	! class_exists( 'Memcached' )
 ) {
 
+	// --------------------------------------------------------------------
+	// Fallback to core object cache
+	// --------------------------------------------------------------------
+
 	if ( function_exists( 'wp_using_ext_object_cache' ) ) {
 		wp_using_ext_object_cache( false );
 	} else {
@@ -120,6 +124,9 @@ if (
 
 } else {
 
+	// --------------------------------------------------------------------
+	// UseMemcached initialization
+	// --------------------------------------------------------------------
 
 	// if we are here we will load our object cache logic
 	define( 'USE_MEMCACHED_OBJECT_CACHE_WAS_LOADED', true );
@@ -551,7 +558,7 @@ if (
 
 		function replace( $id, $data, $group = 'default', $expire = 30 ) {
 			$key    = $this->key( $id, $group );
-			$expire = ( $expire == 30 ) ? $this->default_expiration : $expire;
+			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
 			$mc     =& $this->get_mc( $group );
 
 			if ( is_object( $data ) ) {
@@ -582,7 +589,7 @@ if (
 				return true;
 			}
 
-			$expire = ( $expire == 30 ) ? $this->default_expiration : $expire;
+			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
 			$mc     =& $this->get_mc( $group );
 			$result = $mc->set( $key, $data, $expire );
 
@@ -592,7 +599,7 @@ if (
 		function set_multi( $items, $expire = 30, $group = 'default' ) {
 			$sets   = array();
 			$mc     =& $this->get_mc( $group );
-			$expire = ( $expire == 30 ) ? $this->default_expiration : $expire;
+			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
 
 			foreach ( $items as $i => $item ) {
 				if ( empty( $item[2] ) ) {

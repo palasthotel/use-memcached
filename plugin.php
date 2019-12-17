@@ -9,8 +9,8 @@
  * Domain Path: /languages
  * Author: Palasthotel <rezeption@palasthotel.de> (in person: Edward Bock)
  * Author URI: http://www.palasthotel.de
- * Requires at least: 4.0
- * Tested up to: 5.3
+ * Requires at least: 5.0
+ * Tested up to: 5.3.1
  * License: http://www.gnu.org/licenses/gpl-2.0.html GPLv2
  *
  * @copyright Copyright (c) 2019, Palasthotel
@@ -27,7 +27,7 @@ const DOMAIN = "use-memcached";
 //------------------------------------------------------------------------
 // remember to always update version in object-cache.php too
 //------------------------------------------------------------------------
-const OBJECT_CACHE_SCRIPT_VERSION = 17; // needs to be the same version like template file
+const OBJECT_CACHE_SCRIPT_VERSION = 18; // needs to be the same version like template file
 const ENABLE_OBJECT_CACHE_FILE    = WP_CONTENT_DIR . "/uploads/use-memcached.enabled";
 const DESTINATION_FILE            = WP_CONTENT_DIR . "/object-cache.php";
 
