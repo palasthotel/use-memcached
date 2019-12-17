@@ -18,7 +18,6 @@
 	 */
 	let isFlushing = false;
 	function ajax_flush_request(){
-		console.log("flush");
 		if(isFlushing) return;
 		setLoading(true);
 		isFlushing = true;
