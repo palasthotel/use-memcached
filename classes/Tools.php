@@ -117,14 +117,19 @@ class Tools {
 		);
 
 		$stats = $this->plugin->memcache->stats(true);
-		foreach ($stats as $buckets){
-			foreach ($buckets as $ip => $server){
-				echo "<h3>$ip</h3>";
-				foreach ($server as $key =>  $value){
-					$this->renderRow($key, $value);
-				}
+		if(is_array($stats)){
 
+			foreach ($stats as $buckets){
+				foreach ($buckets as $ip => $server){
+					echo "<h3>$ip</h3>";
+					foreach ($server as $key =>  $value){
+						$this->renderRow($key, $value);
+					}
+
+				}
 			}
+		} else {
+			sprintf("<p>%s</p>",__("No stats available", DOMAIN));
 		}
 
 	}
