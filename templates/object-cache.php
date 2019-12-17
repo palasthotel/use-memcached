@@ -61,7 +61,10 @@ class UseMemcachedConfiguration{
 	 * loads and overwrites configuration that was persisted
 	 */
 	function fetch(){
-		$config = json_decode(file_get_contents(USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE), true);
+		$config = null;
+		if($this->isEnabled()){
+			$config = json_decode(file_get_contents(USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE), true);
+		}
 		$tmp = (is_array($config))? $config : array();
 		$this->config = array_merge(
 			array(
