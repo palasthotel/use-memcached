@@ -76,6 +76,7 @@ class Memcache {
 	 */
 	function setEnabled( $isEnabled){
 		if(class_exists("\UseMemcachedConfiguration")){
+			$this->flush();
 			\UseMemcachedConfiguration::instance()->setEnabled($isEnabled);
 		}
 	}
