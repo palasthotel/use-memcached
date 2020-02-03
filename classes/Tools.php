@@ -98,9 +98,6 @@ class Tools {
 		$config = use_memcached_get_configuration();
 		if($config->isFreistil()){
 			echo "<p>We have Freistil infrastructure</p>";
-			echo "<pre>";
-			var_dump($config->getFreistilSettings());
-			echo "</pre>";
 		} else {
 			echo "<p>We do not have Freistil infrastructure</p>";
 		}
