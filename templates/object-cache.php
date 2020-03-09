@@ -15,6 +15,19 @@ class UseMemcachedConfiguration{
 
 	private $config = array();
 
+	private $blackList = [
+		"notoptions",
+	];
+
+	/**
+	 * @param string $key
+	 *
+	 * @return bool
+	 */
+	function isBlacklisted($key){
+		return in_array($key, $this->blackList);
+	}
+
 	/**
 	 * UseMemcachedConfiguration constructor.
 	 */
@@ -164,10 +177,12 @@ if (
 	}
 
 	function wp_cache_incr( $key, $n = 1, $group = '' ) {
+		use_memcached()->log("incr ".$key);
 		return use_memcached()->incr( $key, $n, $group );
 	}
 
 	function wp_cache_decr( $key, $n = 1, $group = '' ) {
+		use_memcached()->log("decr ".$key);
 		return use_memcached()->decr( $key, $n, $group );
 	}
 
@@ -176,17 +191,17 @@ if (
 	}
 
 	function wp_cache_delete( $key, $group = '' ) {
+		use_memcached()->log("delete ".$key);
 		return use_memcached()->delete( $key, $group );
 	}
 
 	function wp_cache_flush() {
+		use_memcached()->log("flush");
 		return use_memcached()->flush();
 	}
 
 	function wp_cache_get( $key, $group = '', $force = false, &$found = NULL ) {
-		$value = use_memcached()->get( $key, $group, $force, $found );
-
-		return $value;
+		return use_memcached()->get( $key, $group, $force, $found );
 	}
 
 	/**
@@ -221,6 +236,7 @@ if (
 	}
 
 	function wp_cache_replace( $key, $data, $group = '', $expire = 30 ) {
+		use_memcached()->log("replace ".$key, $data);
 		return use_memcached()->replace( $key, $data, $group, $expire );
 	}
 
@@ -261,6 +277,10 @@ if (
 		public $memcache_debug = array(); // added for ElasticPress compatibility
 		public $cache_enabled = true; // modified to allow wordpress to properly disable object cache in wp-activate.php +22 (was private)
 		private $default_expiration = 30;
+		/**
+		 * @var \UseMemcachedConfiguration
+		 */
+		private $config;
 
 		// --------------------------------------------------------------------
 		// WP_Object_Cache constructor
@@ -359,13 +379,14 @@ if (
 		// --------------------------------------------------------------------
 
 		function add( $id, $data, $group = 'default', $expire = 30 ) {
+
 			$key = $this->key( $id, $group );
 
 			if ( is_object( $data ) ) {
 				$data = clone $data;
 			}
 
-			if ( in_array( $group, $this->no_mc_groups ) ) {
+			if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted( $id ) ) {
 				$this->cache[ $key ] = $data;
 
 				return true;
@@ -376,6 +397,8 @@ if (
 			$mc     =& $this->get_mc( $group );
 			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
 			$result = $mc->add( $key, $data, $expire );
+
+			use_memcached()->log("add ".$id, $data);
 
 			if ( false !== $result ) {
 				if ( isset( $this->stats['add'] ) ) {
@@ -432,7 +455,7 @@ if (
 		function delete( $id, $group = 'default' ) {
 			$key = $this->key( $id, $group );
 
-			if ( in_array( $group, $this->no_mc_groups ) ) {
+			if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted( $id )  ) {
 				unset( $this->cache[ $key ] );
 
 				return true;
@@ -482,10 +505,11 @@ if (
 				} else {
 					$value = $this->cache[ $key ];
 				}
-			} else if ( in_array( $group, $this->no_mc_groups ) ) {
+			} else if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted( $id )  ) {
 				$this->cache[ $key ] = $value = false;
 			} else {
 				$value = $mc->get( $key );
+				use_memcached()->log("get ".$id, $value);
 				if ( $mc->getResultCode() == Memcached::RES_NOTFOUND ) {
 					$value = false;
 					if ( NULL !== $found ) {
@@ -531,7 +555,7 @@ if (
 						$return[ $key ] = $this->cache[ $key ];
 					}
 
-				} else if ( in_array( $group, $this->no_mc_groups ) ) {
+				} else if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted($id) ) {
 					$return[ $key ] = false;
 
 				} else {
@@ -596,7 +620,7 @@ if (
 
 			$this->cache[ $key ] = $data;
 
-			if ( in_array( $group, $this->no_mc_groups ) ) {
+			if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted($id) ) {
 				return true;
 			}
 
@@ -630,7 +654,7 @@ if (
 
 				$this->cache[ $key ] = $data;
 
-				if ( in_array( $group, $this->no_mc_groups ) ) {
+				if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted($id) ) {
 					continue;
 				}
 
@@ -690,6 +714,27 @@ if (
 			}
 
 			return $this->mc['default'];
+		}
+
+		function log($key, $value = null){
+			if(function_exists('process_log_write')){
+				try {
+					process_log_write( function ( $log ) use ( $value, $key ) {
+						/**
+						 * @var \Palasthotel\ProcessLog\ProcessLog $log
+						 */
+						$log->setEventType( "memcache" );
+						$log->setChangedDataField( $key );
+						if ( $value != NULL ) {
+							$log->setChangedDataValueNew( $value );
+						}
+
+						return $log;
+					} );
+				} catch ( Exception $e ) {
+					error_log($e->getMessage());
+				}
+			}
 		}
 
 	}
