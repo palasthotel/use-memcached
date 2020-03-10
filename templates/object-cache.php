@@ -3,7 +3,7 @@
 // this file was copied here by use-memcached plugin
 
 // always count up if file changed
-define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 20 );
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 22 );
 // this file needs to exist. otherwise we will fall back to core WP_Object_Cache
 define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE', WP_CONTENT_DIR . "/uploads/use-memcached.enabled" );
 define( 'USE_MEMCACHED_FREISTIL_SETTINGS_FILE', ABSPATH . "/../config/drupal/settings-d8-memcache.php");
@@ -47,7 +47,7 @@ class UseMemcachedConfiguration{
 	 * @param boolean $isEnabled
 	 */
 	function setEnabled( $isEnabled){
-		if ( $isEnabled){
+		if ( $isEnabled ){
 			$this->persist();
 		} else {
 			unlink(USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE);
@@ -177,12 +177,10 @@ if (
 	}
 
 	function wp_cache_incr( $key, $n = 1, $group = '' ) {
-		use_memcached()->log("incr ".$key);
 		return use_memcached()->incr( $key, $n, $group );
 	}
 
 	function wp_cache_decr( $key, $n = 1, $group = '' ) {
-		use_memcached()->log("decr ".$key);
 		return use_memcached()->decr( $key, $n, $group );
 	}
 
@@ -191,12 +189,10 @@ if (
 	}
 
 	function wp_cache_delete( $key, $group = '' ) {
-		use_memcached()->log("delete ".$key);
 		return use_memcached()->delete( $key, $group );
 	}
 
 	function wp_cache_flush() {
-		use_memcached()->log("flush");
 		return use_memcached()->flush();
 	}
 
@@ -236,7 +232,6 @@ if (
 	}
 
 	function wp_cache_replace( $key, $data, $group = '', $expire = 30 ) {
-		use_memcached()->log("replace ".$key, $data);
 		return use_memcached()->replace( $key, $data, $group, $expire );
 	}
 
@@ -377,7 +372,6 @@ if (
 		// --------------------------------------------------------------------
 		// WP_Object_Cache methods
 		// --------------------------------------------------------------------
-
 		function add( $id, $data, $group = 'default', $expire = 30 ) {
 
 			$key = $this->key( $id, $group );
@@ -398,7 +392,7 @@ if (
 			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
 			$result = $mc->add( $key, $data, $expire );
 
-			use_memcached()->log("add ".$id, $data);
+			$this->log("add ".$id, $data);
 
 			if ( false !== $result ) {
 				if ( isset( $this->stats['add'] ) ) {
@@ -435,6 +429,8 @@ if (
 			$mc                  =& $this->get_mc( $group );
 			$this->cache[ $key ] = $mc->increment( $key, $n );
 
+			$this->log("incr ".$id);
+
 			return $this->cache[ $key ];
 		}
 
@@ -442,6 +438,8 @@ if (
 			$key                 = $this->key( $id, $group );
 			$mc                  =& $this->get_mc( $group );
 			$this->cache[ $key ] = $mc->decrement( $key, $n );
+
+			$this->log("decr ".$id);
 
 			return $this->cache[ $key ];
 		}
@@ -465,6 +463,8 @@ if (
 
 			$result = $mc->delete( $key );
 
+			$this->log("delete ".$id);
+
 			if ( isset( $this->stats['delete'] ) ) {
 				++ $this->stats['delete'];
 			}
@@ -486,6 +486,7 @@ if (
 			$ret = true;
 			foreach ( array_keys( $this->mc ) as $group ) {
 				$ret &= $this->mc[ $group ]->flush();
+				$this->log("flush ".$group);
 			}
 
 			return $ret;
@@ -509,7 +510,9 @@ if (
 				$this->cache[ $key ] = $value = false;
 			} else {
 				$value = $mc->get( $key );
-				use_memcached()->log("get ".$id, $value);
+
+				$this->log("get ".$id, $value);
+
 				if ( $mc->getResultCode() == Memcached::RES_NOTFOUND ) {
 					$value = false;
 					if ( NULL !== $found ) {
@@ -537,6 +540,7 @@ if (
 		function get_multi( $keys, $group = 'default' ) {
 			$return = array();
 			$gets   = array();
+			$ids = array();
 			foreach ( $keys as $i => $values ) {
 				$mc     =& $this->get_mc( $group );
 				$values = (array) $values;
@@ -560,6 +564,7 @@ if (
 
 				} else {
 					$gets[ $key ] = $key;
+					$ids[] = $id;
 				}
 			}
 
@@ -568,6 +573,8 @@ if (
 				$results = $mc->getMulti( $gets, $null, Memcached::GET_PRESERVE_ORDER );
 				$joined  = array_combine( array_keys( $gets ), array_values( $results ) );
 				$return  = array_merge( $return, $joined );
+
+				$this->log("getMulti ".implode(", ", $ids), $results);
 			}
 
 			@ ++ $this->stats['get_multi'];
@@ -601,6 +608,9 @@ if (
 			}
 
 			$result = $mc->replace( $key, $data, $expire );
+
+			$this->log("replace ".$id, $data);
+
 			if ( false !== $result ) {
 				$this->cache[ $key ] = $data;
 			}
@@ -628,11 +638,14 @@ if (
 			$mc     =& $this->get_mc( $group );
 			$result = $mc->set( $key, $data, $expire );
 
+			$this->log("set ".$id, $data);
+
 			return $result;
 		}
 
 		function set_multi( $items, $expire = 30, $group = 'default' ) {
 			$sets   = array();
+			$ids = array();
 			$mc     =& $this->get_mc( $group );
 			$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
 
@@ -659,10 +672,14 @@ if (
 				}
 
 				$sets[ $key ] = $data;
+				$ids[] = $id;
+
 			}
 
 			if ( ! empty( $sets ) ) {
 				$mc->setMulti( $sets, $expire );
+
+				$this->log("setMulti ".implode(", ", $ids), array_values($sets));
 			}
 		}
 
