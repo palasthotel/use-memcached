@@ -38,6 +38,7 @@ With other hosters or service settings you need to configure some php variables 
 == Changelog ==
 
 = 1.0.3 =
+* ignoring alloptions and notoptions key for performance reasons
 * logging with ProcessLog
 
 = 1.0.2 =
