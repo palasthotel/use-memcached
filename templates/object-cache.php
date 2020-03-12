@@ -739,7 +739,11 @@ if (
 
 		function log($key, $value = null){
 			if(
-				defined('WP_DEBUG') && WP_DEBUG
+				(
+					(defined('WP_DEBUG') && WP_DEBUG == true)
+					||
+					(defined('USE_MEMCACHED_PROCESS_LOG') && USE_MEMCACHED_PROCESS_LOG == true)
+				)
 				&&
 				function_exists('process_log_write')
 			){

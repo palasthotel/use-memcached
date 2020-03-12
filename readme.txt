@@ -38,7 +38,7 @@ With other hosters or service settings you need to configure some php variables 
 == Changelog ==
 
 = 1.0.4 =
-* process logs will only be written on WP_DEBUG sessions
+* process logs will only be written on WP_DEBUG = true or USE_MEMCACHED_PROCESS_LOG = true sessions
 
 = 1.0.3 =
 * ignoring alloptions and notoptions key for performance reasons
