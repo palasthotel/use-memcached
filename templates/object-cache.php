@@ -3,7 +3,7 @@
 // this file was copied here by use-memcached plugin
 
 // always count up if file changed
-define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 22 );
+define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_VERSION', 23 );
 // this file needs to exist. otherwise we will fall back to core WP_Object_Cache
 define( 'USE_MEMCACHED_OBJECT_CACHE_SCRIPT_ENABLED_FILE', WP_CONTENT_DIR . "/uploads/use-memcached.enabled" );
 define( 'USE_MEMCACHED_FREISTIL_SETTINGS_FILE', ABSPATH . "/../config/drupal/settings-d8-memcache.php");
@@ -17,6 +17,7 @@ class UseMemcachedConfiguration{
 
 	private $blackList = [
 		"notoptions",
+		"alloptions",
 	];
 
 	/**
@@ -336,6 +337,9 @@ if (
 
 			foreach ( $buckets as $bucket => $servers ) {
 				$this->mc[ $bucket ] = new Memcached();
+				if(defined('WP_DEBUG') && WP_DEBUG){
+					$this->mc[ $bucket ] ->setOption(Memcached::OPT_COMPRESSION,false);
+				}
 
 				$instances = array();
 				foreach ( $servers as $server ) {
