@@ -256,13 +256,8 @@ if (
 		 * @var \Memcached[]
 		 */
 		public $mc = array();
-		public $stats = array(
-			'get'        => 0,
-			'get_multi'  => 0,
-			'add'        => 0,
-			'set'        => 0,
-			'delete'     => 0,
-		);
+		public $stats = array();
+
 		public $cache_hits = 0;
 		public $cache_misses = 0;
 		public $group_ops = array();
@@ -389,6 +384,14 @@ if (
 
 			$this->salt_keys( WP_CACHE_KEY_SALT );
 
+			$this->stats =  array(
+				'get'        => 0,
+				'get_multi'  => 0,
+				'add'        => 0,
+				'set'        => 0,
+				'delete'     => 0,
+			);
+
 			$this->cache_hits   =& $this->stats['get'];
 			$this->cache_misses =& $this->stats['add'];
 
@@ -400,19 +403,19 @@ if (
 		function add( $id, $data, $group = 'default', $expire = 0 ) {
 			$key = $this->key( $id, $group );
 
+			// if in cache ignore!
+			if( array_key_exists($this->cache, $key) ) return false;
+
 			if ( is_object( $data ) ) {
 				$data = clone $data;
 			}
 
 			if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted( $id )  ) {
-				$this->cache[ $key ] = [
-					'value' => $data,
-					'found' => false,
-				];
+
+				// if no mc groups or blacklist only cache in memory
+				$this->cache[ $key ] = $data;
 
 				return true;
-			} elseif ( isset( $this->cache[ $key ][ 'value' ] ) && false !== $this->cache[ $key ][ 'value' ] ) {
-				return false;
 			}
 
 			$mc =& $this->get_mc( $group );
@@ -429,19 +432,7 @@ if (
 			if ( false !== $result ) {
 				++$this->stats['add'];
 
-				$this->group_ops[ $group ][] = "add $id";
-				$this->cache[ $key ]         = [
-					'value' => $data,
-					'found' => true,
-				];
-			} else if (
-				false === $result
-				&&
-				true === isset( $this->cache[$key][ 'value' ] )
-				&&
-				false === $this->cache[$key][ 'value' ]
-			) {
-				unset( $this->cache[$key] );
+				$this->cache[$key] = $data;
 			}
 
 			return $result;
@@ -470,11 +461,7 @@ if (
 			$mc                  =& $this->get_mc( $group );
 
 			$incremented = $mc->increment( $key, $n);
-
-			$this->cache[ $key ] = [
-				'value' => $incremented,
-				'found' => false !== $incremented,
-			];
+			if($incremented !== false) $this->cache[ $key ] = $incremented;
 
 			$this->log("incr $id", $incremented);
 
@@ -486,11 +473,7 @@ if (
 			$mc                  =& $this->get_mc( $group );
 
 			$decremented = $mc->decrement( $key, $n );
-			$this->cache[ $key ] = [
-				'value' => $decremented,
-				'found' => false !== $decremented,
-			];
-
+			if($decremented !== false) $this->cache[ $key ] = $decremented;
 
 			$this->log("decr $id", $decremented);
 
@@ -515,16 +498,13 @@ if (
 			$mc =& $this->get_mc( $group );
 
 			$result = $mc->delete( $key );
+			unset( $this->cache[ $key ] );
 
 			$this->log("delete $id");
 
 			++$this->stats['delete'];
 
 			$this->group_ops[ $group ][] = "delete $id";
-
-			if ( false !== $result ) {
-				unset( $this->cache[ $key ] );
-			}
 
 			return $result;
 		}
@@ -559,51 +539,35 @@ if (
 		function get( $id, $group = 'default', $force = false, &$found = null ) {
 			$key = $this->key( $id, $group );
 			$mc =& $this->get_mc( $group );
-			$found = true;
 
-			if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted($id) ) ) {
-				if ( isset( $this->cache[ $key ][ 'value' ] ) && is_object( $this->cache[ $key ][ 'value' ] ) ) {
-					$value = clone $this->cache[ $key ][ 'value' ];
-				} else {
-					$value = $this->cache[ $key ][ 'value' ];
+			if( array_key_exists($key, $this->cache) ){
+				$found = true;
+				if( is_object($this->cache[$key]) ){
+					return clone $this->cache[$key];
 				}
-
-				$found = $this->cache[ $key ][ 'found' ];
-			} else if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted( $id )) {
-				$this->cache[ $key ] = [
-					'value' => $value = false,
-					'found' => false,
-				];
-
+				return $this->cache[$key];
+			} else if( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted($id) ){
 				$found = false;
-			} else {
-				$flags = false;
-				$value = $mc->get( $key, null, $flags );
-
-				$this->log("get $id", $value);
-
-				// Value will be unchanged if the key doesn't exist.
-				if ( false === $flags ) {
-					$found = false;
-					$value = false;
-				}
-
-				$this->cache[ $key ] = [
-					'value' => $value,
-					'found' => $found,
-				];
+				return false;
 			}
+
+			$found = false;
+			$flags = false;
+			$value = $mc->get( $key, null, $flags );
+
+			$this->log("get $id", $value);
+
+			if( false === $flags){
+				$found = false;
+				return false;
+			}
+
+			$found = true;
+			$this->cache[$key] = $value;
 
 			++$this->stats['get'];
 
 			$this->group_ops[ $group ][] = "get $id";
-
-			if ( 'checkthedatabaseplease' === $value ) {
-				unset( $this->cache[ $key ] );
-
-				$found = false;
-				$value = false;
-			}
 
 			return $value;
 		}
@@ -614,60 +578,21 @@ if (
 			*/
 			$return = array();
 			$ids = array();
-			$return_cache = array(
-				'value' => false,
-				'found' => false,
-			);
 
 			foreach ( $groups as $group => $ids ) {
-				$mc =& $this->get_mc( $group );
 
 				foreach ( $ids as $id ) {
+					$value = $this->get($id, $group);
 					$key = $this->key( $id, $group );
-
-					if ( isset( $this->cache[ $key ] ) ) {
-						if ( is_object( $this->cache[ $key ][ 'value'] ) ) {
-							$return[ $key ] = clone $this->cache[ $key ][ 'value'];
-							$return_cache[ $key ] = [
-								'value' => clone $this->cache[ $key ][ 'value'],
-								'found' => $this->cache[ $key ][ 'found'],
-							];
-						} else {
-							$return[ $key ] = $this->cache[ $key ][ 'value'];
-							$return_cache[ $key ] = [
-								'value' => $this->cache[ $key ][ 'value' ],
-								'found' => $this->cache[ $key ][ 'found' ],
-							];
-						}
-
-						continue;
-					} else if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted($id) ) {
-						$return[ $key ] = false;
-						$return_cache[ $key ] = [
-							'value' => false,
-							'found' => false,
-						];
-
-						continue;
-					} else {
-						$fresh_get = $mc->get( $key );
-						$ids[] = $id;
-						$return[ $key ] = $fresh_get;
-						$return_cache[ $key ] = [
-							'value' => $fresh_get,
-							'found' => false !== $fresh_get,
-						];
-					}
+					$return[$key] = $value;
 				}
+
+				$this->group_ops[ $group ][] = "get_multi $id";
 			}
 
 			++$this->stats['get_multi'];
 
-			$this->group_ops[ $group ][] = "get_multi $id";
-
-			$this->log("getMulti ".implode(", ", $ids), $return_cache);
-
-			$this->cache = array_merge( $this->cache, $return_cache );
+			$this->log("getMulti ".implode(", ", $ids), $return);
 
 			return $return;
 		}
@@ -734,15 +659,9 @@ if (
 			}
 
 			$result = $mc->replace( $key, $data, $expire );
+			$this->cache[$key] = $data;
 
 			$this->log("replace $id", $data);
-
-			if ( false !== $result ) {
-				$this->cache[ $key ] = [
-					'value' => $data,
-					'found' => true,
-				];
-			}
 
 			return $result;
 		}
@@ -750,18 +669,11 @@ if (
 		function set( $id, $data, $group = 'default', $expire = 0 ) {
 			$key = $this->key( $id, $group );
 
-			if ( isset( $this->cache[ $key ] ) && ( 'checkthedatabaseplease' === $this->cache[ $key ][ 'value' ] ) ) {
-				return false;
-			}
-
 			if ( is_object( $data ) ) {
 				$data = clone $data;
 			}
 
-			$this->cache[ $key ] = [
-				'value' => $data,
-				'found' => false, // Set to false as not technically found in memcache at this point.
-			];
+			$this->cache[ $key ] = $data;
 
 			if ( in_array( $group, $this->no_mc_groups ) || $this->config->isBlacklisted($id)) {
 				return true;
@@ -776,9 +688,6 @@ if (
 			$result = $mc->set( $key, $data, $expire );
 
 			$this->log("set $id", $data);
-
-			// Update the found cache value with the result of the set in memcache.
-			$this->cache[ $key ][ 'found' ] = $result;
 
 			++$this->stats[ 'set' ];
 			$this->group_ops[$group][] = "set $id";
