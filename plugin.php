@@ -27,7 +27,7 @@ const DOMAIN = "use-memcached";
 //------------------------------------------------------------------------
 // remember to always update version in object-cache.php too
 //------------------------------------------------------------------------
-const OBJECT_CACHE_SCRIPT_VERSION = 24; // needs to be the same version like template file
+const OBJECT_CACHE_SCRIPT_VERSION = 25; // needs to be the same version like template file
 const ENABLE_OBJECT_CACHE_FILE    = WP_CONTENT_DIR . "/uploads/use-memcached.enabled";
 const DESTINATION_FILE            = WP_CONTENT_DIR . "/object-cache.php";
 
