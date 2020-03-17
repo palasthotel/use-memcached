@@ -195,7 +195,7 @@ if (
 	}
 
 	function wp_cache_flush() {
-		use_memcached()->flush();
+		return use_memcached()->flush();
 	}
 
 	function wp_cache_get( $key, $group = '', $force = false, &$found = NULL ) {
@@ -366,8 +366,8 @@ if (
 						}
 					}
 
-					$this->mc[ $bucket ]->addServer( $node, $port, true, 1, 1, 15, true, array( $this, 'failure_callback' ) );
-					$this->mc[ $bucket ]->setCompressThreshold( 20000, 0.2 );
+					$this->mc[ $bucket ]->addServer( $node, $port, 1);
+					//					$this->mc[ $bucket ]->setCompressThreshold( 20000, 0.2 );
 				}
 			}
 
@@ -404,7 +404,7 @@ if (
 			$key = $this->key( $id, $group );
 
 			// if in cache ignore!
-			if( array_key_exists($this->cache, $key) ) return false;
+			if( array_key_exists( $key, $this->cache) ) return false;
 
 			if ( is_object( $data ) ) {
 				$data = clone $data;
@@ -510,30 +510,14 @@ if (
 		}
 
 		function flush() {
-			// Do not use the memcached flush method. It acts on an
-			// entire memcached server, affecting all sites.
-			// Flush is also unusable in some setups, e.g. twemproxy.
-			// Instead, rotate the key prefix for the current site.
-			// Global keys are rotated when flushing on the main site.
-			$this->cache = array();
-
-			$this->rotate_site_keys();
-
-			if ( is_main_site() ) {
-				$this->rotate_global_keys();
+			$ret = true;
+			foreach ( array_keys( $this->mc ) as $group ) {
+				$ret &= $this->mc[ $group ]->flush();
+				$this->log("flush ".$group);
 			}
-		}
 
-		function rotate_site_keys() {
-			$this->add( 'flush_number', intval( microtime( true ) * 1e6 ), 'WP_Object_Cache' );
+			return $ret;
 
-			$this->flush_number[ $this->blog_prefix ] = $this->incr( 'flush_number', 1, 'WP_Object_Cache' );
-		}
-
-		function rotate_global_keys() {
-			$this->add( 'flush_number', intval( microtime( true ) * 1e6 ), 'WP_Object_Cache_global' );
-
-			$this->global_flush_number = $this->incr( 'flush_number', 1, 'WP_Object_Cache_global' );
 		}
 
 		function get( $id, $group = 'default', $force = false, &$found = null ) {
@@ -585,45 +569,18 @@ if (
 					$value = $this->get($id, $group);
 					$key = $this->key( $id, $group );
 					$return[$key] = $value;
+
+					$this->group_ops[ $group ][] = "get_multi $id";
 				}
 
-				$this->group_ops[ $group ][] = "get_multi $id";
+
 			}
 
 			++$this->stats['get_multi'];
 
-			$this->log("getMulti ".implode(", ", $ids), $return);
+			$this->log("get_multi ".implode(", ", $ids), $return);
 
 			return $return;
-		}
-
-		function flush_prefix( $group ) {
-			if ( 'WP_Object_Cache' === $group || 'WP_Object_Cache_global' === $group ) {
-				// Never flush the flush numbers.
-				$number = '_';
-			} elseif ( false !== array_search( $group, $this->global_groups ) ) {
-				if ( ! isset( $this->global_flush_number ) ) {
-					$this->global_flush_number = intval( $this->get( 'flush_number', 'WP_Object_Cache_global' ) );
-				}
-
-				if ( 0 === $this->global_flush_number ) {
-					$this->rotate_global_keys();
-				}
-
-				$number = $this->global_flush_number;
-			} else {
-				if ( ! isset( $this->flush_number[ $this->blog_prefix ] ) ) {
-					$this->flush_number[ $this->blog_prefix ] = intval( $this->get( 'flush_number', 'WP_Object_Cache' ) );
-				}
-
-				if ( 0 === $this->flush_number[ $this->blog_prefix ] ) {
-					$this->rotate_site_keys();
-				}
-
-				$number = $this->flush_number[ $this->blog_prefix ];
-			}
-
-			return $number . ':';
 		}
 
 		function key( $key, $group ) {
@@ -633,7 +590,7 @@ if (
 
 			$prefix = $this->key_salt;
 
-			$prefix .= $this->flush_prefix( $group );
+			$prefix .= ":";
 
 			if ( false !== array_search( $group, $this->global_groups ) ) {
 				$prefix .= $this->global_prefix;
