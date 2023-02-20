@@ -12,7 +12,7 @@ WP_Object_Cache implementation with Memcached.
 
 == Description ==
 
-Use this to optimize your website performance with Memcached instances.
+This plugin is no longer actively maintained.
 
 == Installation ==
 
